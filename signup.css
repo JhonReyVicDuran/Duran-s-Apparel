@@ -232,3 +232,42 @@
     }
 
 }
+
+/* =====================================================
+   SUCCESS MESSAGE
+===================================================== */
+
+.success-message {
+    background: #e8f7e8;
+    color: #267326;
+
+    border: 1px solid #9bd49b;
+
+    padding: 12px 15px;
+
+    margin-bottom: 20px;
+
+    font-size: 14px;
+
+    text-align: center;
+}
+
+
+/* =====================================================
+   ERROR MESSAGE
+===================================================== */
+
+.error-message {
+    background: #ffe8e8;
+    color: #d00000;
+
+    border: 1px solid #ffaaaa;
+
+    padding: 12px 15px;
+
+    margin-bottom: 20px;
+
+    font-size: 14px;
+
+    text-align: center;
+}

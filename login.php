@@ -1,48 +1,253 @@
+<?php
+
+/* =====================================================
+   START SESSION
+===================================================== */
+
+session_start();
+
+
+/* =====================================================
+   DATABASE CONNECTION
+===================================================== */
+
+require_once "db.php";
+
+
+/* =====================================================
+   LOGIN VARIABLES
+===================================================== */
+
+$error = "";
+
+
+/* =====================================================
+   LOGIN PROCESS
+===================================================== */
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    $email = trim($_POST["email"] ?? "");
+    $password = $_POST["password"] ?? "";
+
+
+    /* CHECK EMPTY FIELDS */
+
+    if (empty($email) || empty($password)) {
+
+        $error = "Please enter your email and password.";
+
+    }
+
+
+    /* CHECK EMAIL FORMAT */
+
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+        $error = "Please enter a valid email address.";
+
+    }
+
+
+    else {
+
+        /* =================================================
+           FIND ACCOUNT IN DATABASE
+        ================================================= */
+
+        $stmt = $conn->prepare(
+            "SELECT user_id, full_name, email, password
+             FROM users
+             WHERE email = ?"
+        );
+
+        $stmt->bind_param("s", $email);
+
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+
+
+        /* =================================================
+           CHECK IF ACCOUNT EXISTS
+        ================================================= */
+
+        if ($result->num_rows === 1) {
+
+            $user = $result->fetch_assoc();
+
+
+            /* =================================================
+               CHECK PASSWORD
+            ================================================= */
+
+            if (
+                password_verify(
+                    $password,
+                    $user["password"]
+                )
+            ) {
+
+                /* =============================================
+                   CREATE LOGIN SESSION
+                ============================================= */
+
+                session_regenerate_id(true);
+
+                $_SESSION["user_id"] =
+                    $user["user_id"];
+
+                $_SESSION["full_name"] =
+                    $user["full_name"];
+
+                $_SESSION["email"] =
+                    $user["email"];
+
+
+                /* =============================================
+                   LOGIN SUCCESS
+                ============================================= */
+
+                header("Location: index.php");
+                exit;
+
+            }
+
+            else {
+
+                $error = "Incorrect email or password.";
+
+            }
+
+        }
+
+        else {
+
+            $error = "Incorrect email or password.";
+
+        }
+
+
+        $stmt->close();
+
+    }
+
+}
+
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Log In | DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="login.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="login.css"
+    >
+
 </head>
+
 
 <body>
 
-    <!-- ================= NAVBAR ================= -->
+
+    <!-- =====================================================
+         NAVBAR
+    ===================================================== -->
 
     <header class="navbar">
 
         <div class="logo">
+
             <a href="index.php">
-                <img src="images/logo.png">
+
+                <img
+                    src="images/logo.png"
+                    alt="DURAN'S Apparel"
+                >
+
             </a>
+
         </div>
+
 
         <nav class="menu">
 
-            <a href="index.php">HOME</a>
+            <a href="index.php">
+                HOME
+            </a>
 
-            <a href="about.php">ABOUT US</a>
+            <a href="about.php">
+                ABOUT US
+            </a>
 
-            <a href="collection.php">COLLECTIONS</a>
+            <a href="collection.php">
+                COLLECTIONS
+            </a>
 
-            <a href="contact.php">CONTACT US</a>
+            <a href="contact.php">
+                CONTACT US
+            </a>
 
         </nav>
 
+
         <div class="account">
 
-            <a href="signup.php" class="signup">
-                Sign up
-            </a>
+            <?php if (isset($_SESSION["user_id"])): ?>
 
-            <a href="cart.php" class="cart">
-                🛒 
+                <span class="user-name">
+
+                    Hello,
+                    <?php
+                    echo htmlspecialchars(
+                        $_SESSION["full_name"]
+                    );
+                    ?>
+
+                </span>
+
+
+                <a
+                    href="logout.php"
+                    class="logout"
+                >
+                    Log Out
+                </a>
+
+            <?php else: ?>
+
+                <a
+                    href="signup.php"
+                    class="signup"
+                >
+                    Sign up
+                </a>
+
+            <?php endif; ?>
+
+
+            <a
+                href="cart.php"
+                class="cart"
+            >
+                🛒
             </a>
 
         </div>
@@ -50,11 +255,15 @@
     </header>
 
 
-    <!-- ================= LOGIN ================= -->
+
+    <!-- =====================================================
+         LOGIN
+    ===================================================== -->
 
     <main class="login-page">
 
         <div class="login-container">
+
 
             <div class="login-header">
 
@@ -69,12 +278,36 @@
             </div>
 
 
+
+            <!-- =================================================
+                 ERROR MESSAGE
+            ================================================= -->
+
+            <?php if (!empty($error)): ?>
+
+                <div class="error-message">
+
+                    <?php
+                    echo htmlspecialchars($error);
+                    ?>
+
+                </div>
+
+            <?php endif; ?>
+
+
+
+            <!-- =================================================
+                 LOGIN FORM
+            ================================================= -->
+
             <form
                 class="login-form"
                 id="loginForm"
-                action="#"
+                action="login.php"
                 method="POST"
             >
+
 
                 <!-- EMAIL -->
 
@@ -89,10 +322,16 @@
                         id="email"
                         name="email"
                         placeholder="Enter your email"
+                        value="<?php
+                            echo htmlspecialchars(
+                                $_POST["email"] ?? ""
+                            );
+                        ?>"
                         required
                     >
 
                 </div>
+
 
 
                 <!-- PASSWORD -->
@@ -111,6 +350,7 @@
 
                     </div>
 
+
                     <input
                         type="password"
                         id="password"
@@ -120,6 +360,7 @@
                     >
 
                 </div>
+
 
 
                 <!-- REMEMBER ME -->
@@ -139,6 +380,7 @@
                 </div>
 
 
+
                 <!-- LOGIN BUTTON -->
 
                 <button
@@ -149,6 +391,7 @@
                 </button>
 
             </form>
+
 
 
             <!-- SIGN UP -->
@@ -163,12 +406,16 @@
 
             </div>
 
+
         </div>
 
     </main>
 
 
-    <!-- ================= FOOTER ================= -->
+
+    <!-- =====================================================
+         FOOTER
+    ===================================================== -->
 
     <footer>
 
@@ -179,34 +426,6 @@
 
     </footer>
 
-
-    <!-- ================= JAVASCRIPT ================= -->
-
-    <script>
-
-        function updateCartCount() {
-
-            const cart =
-                JSON.parse(localStorage.getItem("duranCart")) || [];
-
-            const count =
-                cart.reduce(
-                    (total, item) => total + item.quantity,
-                    0
-                );
-
-            const cartCount =
-                document.getElementById("cartCount");
-
-            if (cartCount) {
-                cartCount.textContent = count;
-            }
-
-        }
-
-        updateCartCount();
-
-    </script>
 
 </body>
 

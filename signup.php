@@ -1,17 +1,212 @@
+<?php
+
+/* =====================================================
+   START SESSION
+===================================================== */
+
+session_start();
+
+
+/* =====================================================
+   DATABASE CONNECTION
+===================================================== */
+
+require_once "db.php";
+
+
+/* =====================================================
+   VARIABLES
+===================================================== */
+
+$error = "";
+$success = "";
+
+$fullname = "";
+$email = "";
+
+
+/* =====================================================
+   SIGN UP PROCESS
+===================================================== */
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    $fullname = trim($_POST["fullname"] ?? "");
+    $email = trim($_POST["email"] ?? "");
+    $password = $_POST["password"] ?? "";
+    $confirmPassword = $_POST["confirmPassword"] ?? "";
+
+
+    /* =================================================
+       CHECK EMPTY FIELDS
+    ================================================= */
+
+    if (
+        empty($fullname) ||
+        empty($email) ||
+        empty($password) ||
+        empty($confirmPassword)
+    ) {
+
+        $error = "Please fill in all required fields.";
+
+    }
+
+
+    /* =================================================
+       CHECK EMAIL
+    ================================================= */
+
+    elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+        $error = "Please enter a valid email address.";
+
+    }
+
+
+    /* =================================================
+       CHECK PASSWORD LENGTH
+    ================================================= */
+
+    elseif (strlen($password) < 6) {
+
+        $error = "Password must be at least 6 characters.";
+
+    }
+
+
+    /* =================================================
+       CHECK PASSWORD MATCH
+    ================================================= */
+
+    elseif ($password !== $confirmPassword) {
+
+        $error = "Passwords do not match.";
+
+    }
+
+
+    else {
+
+        /* =================================================
+           CHECK IF EMAIL ALREADY EXISTS
+        ================================================= */
+
+        $check = $conn->prepare(
+            "SELECT user_id
+             FROM users
+             WHERE email = ?"
+        );
+
+        $check->bind_param(
+            "s",
+            $email
+        );
+
+        $check->execute();
+
+        $result = $check->get_result();
+
+
+        if ($result->num_rows > 0) {
+
+            $error =
+                "An account with this email already exists.";
+
+        }
+
+        else {
+
+            /* =================================================
+               HASH PASSWORD
+            ================================================= */
+
+            $hashedPassword = password_hash(
+                $password,
+                PASSWORD_DEFAULT
+            );
+
+
+            /* =================================================
+               SAVE ACCOUNT TO DATABASE
+            ================================================= */
+
+            $stmt = $conn->prepare(
+                "INSERT INTO users
+                (full_name, email, password)
+                VALUES (?, ?, ?)"
+            );
+
+            $stmt->bind_param(
+                "sss",
+                $fullname,
+                $email,
+                $hashedPassword
+            );
+
+
+            if ($stmt->execute()) {
+
+                $success =
+                    "Account created successfully! You can now log in.";
+
+                $fullname = "";
+                $email = "";
+
+            }
+
+            else {
+
+                $error =
+                    "Something went wrong. Please try again.";
+
+            }
+
+
+            $stmt->close();
+
+        }
+
+
+        $check->close();
+
+    }
+
+}
+
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Sign Up | DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="signup.css">
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="signup.css"
+    >
+
 </head>
 
+
 <body>
+
 
     <!-- =====================================================
          NAVBAR
@@ -19,37 +214,112 @@
 
     <header class="navbar">
 
+
+        <!-- LOGO -->
+
         <div class="logo">
+
             <a href="index.php">
-                <img src="images/logo.png">
+
+                <img
+                    src="images/logo.png"
+                    alt="DURAN'S Apparel"
+                >
+
             </a>
+
         </div>
+
+
+
+        <!-- MENU -->
 
         <nav class="menu">
 
-            <a href="index.php">HOME</a>
+            <a href="index.php">
+                HOME
+            </a>
 
-            <a href="about.php">ABOUT US</a>
+            <a href="about.php">
+                ABOUT US
+            </a>
 
-            <a href="collection.php">COLLECTIONS</a>
+            <a href="collection.php">
+                COLLECTIONS
+            </a>
 
-            <a href="contact.php">CONTACT US</a>
+            <a href="contact.php">
+                CONTACT US
+            </a>
 
         </nav>
 
+
+
+        <!-- ACCOUNT -->
+
         <div class="account">
 
-            <a href="login.php" class="login">Log in</a>
 
-         
+            <?php if (isset($_SESSION["user_id"])): ?>
 
-            <a href="cart.php" class="cart">
+
+                <!-- USER NAME -->
+
+                <span class="user-name">
+
+                    Hello,
+                    <?php
+
+                    echo htmlspecialchars(
+                        $_SESSION["full_name"]
+                    );
+
+                    ?>
+
+                </span>
+
+
+                <!-- LOG OUT -->
+
+                <a
+                    href="logout.php"
+                    class="logout"
+                >
+                    Log Out
+                </a>
+
+
+            <?php else: ?>
+
+
+                <!-- LOG IN -->
+
+                <a
+                    href="login.php"
+                    class="login"
+                >
+                    Log in
+                </a>
+
+
+            <?php endif; ?>
+
+
+            <!-- CART -->
+
+            <a
+                href="cart.php"
+                class="cart"
+            >
                 🛒
             </a>
+
 
         </div>
 
     </header>
+
 
 
     <!-- =====================================================
@@ -58,45 +328,117 @@
 
     <main class="signup-page">
 
+
         <div class="signup-container">
+
+
+            <!-- HEADER -->
 
             <div class="signup-header">
 
                 <h1>
-                    Create <span>Account</span>
+
+                    Create
+                    <span>Account</span>
+
                 </h1>
 
+
                 <p>
-                    Join DURAN'S Apparel and discover your style.
+
+                    Join DURAN'S Apparel and
+                    discover your style.
+
                 </p>
 
             </div>
 
 
+
+            <!-- =================================================
+                 SUCCESS MESSAGE
+            ================================================= -->
+
+            <?php if (!empty($success)): ?>
+
+                <div class="success-message">
+
+                    <?php
+
+                    echo htmlspecialchars(
+                        $success
+                    );
+
+                    ?>
+
+                </div>
+
+            <?php endif; ?>
+
+
+
+            <!-- =================================================
+                 ERROR MESSAGE
+            ================================================= -->
+
+            <?php if (!empty($error)): ?>
+
+                <div class="error-message">
+
+                    <?php
+
+                    echo htmlspecialchars(
+                        $error
+                    );
+
+                    ?>
+
+                </div>
+
+            <?php endif; ?>
+
+
+
+            <!-- =================================================
+                 SIGN UP FORM
+            ================================================= -->
+
             <form
                 class="signup-form"
                 id="signupForm"
-                action="#"
+                action="signup.php"
                 method="POST"
             >
+
 
                 <!-- FULL NAME -->
 
                 <div class="form-group">
 
                     <label for="fullname">
+
                         Full Name
+
                     </label>
+
 
                     <input
                         type="text"
                         id="fullname"
                         name="fullname"
                         placeholder="Enter your full name"
+                        value="<?php
+
+                            echo htmlspecialchars(
+                                $fullname
+                            );
+
+                        ?>"
                         required
                     >
 
                 </div>
+
 
 
                 <!-- EMAIL -->
@@ -104,18 +446,29 @@
                 <div class="form-group">
 
                     <label for="email">
+
                         Email Address
+
                     </label>
+
 
                     <input
                         type="email"
                         id="email"
                         name="email"
                         placeholder="Enter your email"
+                        value="<?php
+
+                            echo htmlspecialchars(
+                                $email
+                            );
+
+                        ?>"
                         required
                     >
 
                 </div>
+
 
 
                 <!-- PASSWORD -->
@@ -123,8 +476,11 @@
                 <div class="form-group">
 
                     <label for="password">
+
                         Password
+
                     </label>
+
 
                     <input
                         type="password"
@@ -135,14 +491,19 @@
                         required
                     >
 
+
                     <div
                         class="password-message"
                         id="passwordMessage"
                     >
-                        Password must be at least 6 characters.
+
+                        Password must be at least
+                        6 characters.
+
                     </div>
 
                 </div>
+
 
 
                 <!-- CONFIRM PASSWORD -->
@@ -150,8 +511,11 @@
                 <div class="form-group">
 
                     <label for="confirmPassword">
+
                         Confirm Password
+
                     </label>
+
 
                     <input
                         type="password"
@@ -161,14 +525,18 @@
                         required
                     >
 
+
                     <div
                         class="password-message"
                         id="confirmMessage"
                     >
+
                         Passwords do not match.
+
                     </div>
 
                 </div>
+
 
 
                 <!-- TERMS -->
@@ -178,12 +546,15 @@
                     <input
                         type="checkbox"
                         id="terms"
+                        name="terms"
                         required
                     >
+
 
                     <label for="terms">
 
                         I agree to the
+
                         <a href="#">
                             Terms & Conditions
                         </a>
@@ -199,16 +570,21 @@
                 </div>
 
 
+
                 <!-- BUTTON -->
 
                 <button
                     type="submit"
                     class="signup-button"
                 >
+
                     CREATE ACCOUNT
+
                 </button>
 
+
             </form>
+
 
 
             <!-- LOGIN LINK -->
@@ -218,14 +594,18 @@
                 Already have an account?
 
                 <a href="login.php">
+
                     Log in
+
                 </a>
 
             </div>
 
+
         </div>
 
     </main>
+
 
 
     <!-- =====================================================
@@ -235,11 +615,14 @@
     <footer>
 
         <p>
+
             © 2026 DURAN'S Apparel.
             All Rights Reserved.
+
         </p>
 
     </footer>
+
 
 
     <!-- =====================================================
@@ -264,79 +647,65 @@
             document.getElementById("confirmMessage");
 
 
-        signupForm.addEventListener("submit", function(event) {
+        signupForm.addEventListener(
+            "submit",
+            function(event) {
 
-            let valid = true;
-
-
-            /* PASSWORD LENGTH */
-
-            if (password.value.length < 6) {
-
-                passwordMessage.style.display = "block";
-
-                valid = false;
-
-            } else {
-
-                passwordMessage.style.display = "none";
-
-            }
+                let valid = true;
 
 
-            /* PASSWORD MATCH */
+                /* PASSWORD LENGTH */
 
-            if (password.value !== confirmPassword.value) {
+                if (password.value.length < 6) {
 
-                confirmMessage.style.display = "block";
+                    passwordMessage.style.display =
+                        "block";
 
-                valid = false;
+                    valid = false;
 
-            } else {
+                }
 
-                confirmMessage.style.display = "none";
+                else {
 
-            }
+                    passwordMessage.style.display =
+                        "none";
 
-
-            if (!valid) {
-
-                event.preventDefault();
-
-            }
-
-        });
+                }
 
 
-        /* =====================================================
-           CART COUNT
-        ===================================================== */
+                /* PASSWORD MATCH */
 
-        function updateCartCount() {
+                if (
+                    password.value !==
+                    confirmPassword.value
+                ) {
 
-            const cart =
-                JSON.parse(localStorage.getItem("duranCart")) || [];
+                    confirmMessage.style.display =
+                        "block";
 
-            const count =
-                cart.reduce(
-                    (total, item) => total + item.quantity,
-                    0
-                );
+                    valid = false;
 
-            const cartCount =
-                document.getElementById("cartCount");
+                }
 
-            if (cartCount) {
+                else {
 
-                cartCount.textContent = count;
+                    confirmMessage.style.display =
+                        "none";
+
+                }
+
+
+                if (!valid) {
+
+                    event.preventDefault();
+
+                }
 
             }
-
-        }
-
-        updateCartCount();
+        );
 
     </script>
+
 
 </body>
 

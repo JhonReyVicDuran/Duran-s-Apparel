@@ -1,3 +1,7 @@
+<?php
+session_start();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,6 +12,9 @@
     <title>DURAN'S Apparel</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="logout.css">
+
 </head>
 
 <body>
@@ -50,19 +57,30 @@
 
     <div class="account">
 
-        <a href="login.php" class="login">
-            Log in
-        </a>
+    <?php if (isset($_SESSION["user_id"])): ?>
 
-        <a href="signup.php" class="signup">
-            Sign up
-        </a>
+    <span class="user-name">
+        Hello, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
+    </span>
 
-        <a href="cart.php" class="cart">
-            🛒
-        </a>
+    <a href="logout.php" class="login" onclick="openLogoutPopup(event);">
+        Log Out
+    </a>
 
-    </div>
+<?php else: ?>
+
+    <a href="login.php" class="login">Log in</a>
+
+    <a href="signup.php" class="signup">Sign up</a>
+
+<?php endif; ?>
+
+
+    <a href="cart.php" class="cart">
+        🛒
+    </a>
+
+</div>
 
 </header>
 
@@ -348,7 +366,39 @@
 
 </section>
 
+<div class="logout-overlay" id="logoutOverlay">
 
+    <div class="logout-popup">
+
+        <h2>Log Out?</h2>
+
+        <p>
+            Are you sure you want to log out?
+        </p>
+
+        <div class="logout-buttons">
+
+            <button
+                type="button"
+                class="logout-confirm"
+                onclick="confirmLogout();"
+            >
+                LOG OUT
+            </button>
+
+            <button
+                type="button"
+                class="logout-cancel"
+                onclick="closeLogoutPopup();"
+            >
+                CANCEL
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 <!-- =====================================================
      FOOTER
@@ -477,6 +527,38 @@
 
 </footer>
 
+<script>
+function confirmLogout() {
+    return confirm("Are you sure you want to log out?");
+}
+
+function openLogoutPopup(event) {
+
+    event.preventDefault();
+
+    document
+        .getElementById("logoutOverlay")
+        .classList.add("active");
+
+}
+
+
+function closeLogoutPopup() {
+
+    document
+        .getElementById("logoutOverlay")
+        .classList.remove("active");
+
+}
+
+
+function confirmLogout() {
+
+    window.location.href = "logout.php";
+
+}
+
+</script>
 
 </body>
 </html>

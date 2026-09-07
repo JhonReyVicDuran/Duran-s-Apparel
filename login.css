@@ -252,3 +252,23 @@
     }
 
 }
+
+/* =====================================================
+   LOGIN ERROR MESSAGE
+===================================================== */
+
+.error-message {
+    background: #ffe8e8;
+
+    color: #d00000;
+
+    border: 1px solid #ffaaaa;
+
+    padding: 12px 15px;
+
+    margin-bottom: 20px;
+
+    font-size: 14px;
+
+    text-align: center;
+}
