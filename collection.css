@@ -528,6 +528,284 @@
 
 }
 
+/* =====================================================
+   QUANTITY SELECTOR
+===================================================== */
+
+.quantity-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.quantity-selector button {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: #000;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.quantity-selector button:hover {
+    background: #ff0505;
+}
+
+.quantity-selector input {
+    width: 50px;
+    height: 38px;
+    border: none;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    background: #fff;
+}
+
+
+/* =====================================================
+   DISABLED BUTTON
+===================================================== */
+
+.add-cart:disabled {
+    background: #999;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+/* =====================================================
+   STOCK
+===================================================== */
+
+.quantity {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   CART COUNT
+===================================================== */
+
+.cart {
+    position: relative;
+}
+
+#cartCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 18px;
+    height: 18px;
+
+    padding: 2px 5px;
+
+    background: #ff0505;
+    color: #fff;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    vertical-align: top;
+    margin-left: 2px;
+}
+/* =====================================================
+   LOGIN REQUIRED POPUP
+===================================================== */
+
+.login-required-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background: rgba(0, 0, 0, 0.70);
+
+    display: none;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 9999;
+}
+
+.login-required-overlay.active {
+    display: flex;
+}
+
+
+/* =====================================================
+   POPUP BOX
+===================================================== */
+
+.login-required-popup {
+    width: 90%;
+    max-width: 420px;
+
+    background: #fff;
+
+    padding: 40px 35px;
+
+    text-align: center;
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35);
+
+    animation: loginPopup 0.25s ease;
+}
+
+
+/* =====================================================
+   ICON
+===================================================== */
+
+.login-required-icon {
+    width: 60px;
+    height: 60px;
+
+    margin: 0 auto 20px;
+
+    background: #000;
+
+    color: #fff;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 27px;
+}
+
+
+/* =====================================================
+   TITLE
+===================================================== */
+
+.login-required-popup h2 {
+    margin: 0 0 10px;
+
+    color: #000;
+
+    font-size: 25px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+.login-required-popup p {
+    margin: 0 0 25px;
+
+    color: #666;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.login-required-buttons {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+}
+
+
+/* LOGIN BUTTON */
+
+.login-required-login {
+    padding: 12px 25px;
+
+    background: #ff0505;
+
+    color: #fff;
+
+    border: none;
+
+    font-size: 13px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.login-required-login:hover {
+    background: #000;
+}
+
+
+/* CANCEL BUTTON */
+
+.login-required-cancel {
+    padding: 12px 25px;
+
+    background: #fff;
+
+    color: #000;
+
+    border: 1px solid #000;
+
+    font-size: 13px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.login-required-cancel:hover {
+    background: #000;
+
+    color: #fff;
+}
+
+
+/* =====================================================
+   ANIMATION
+===================================================== */
+
+@keyframes loginPopup {
+
+    from {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+}
+
 
 /* =====================================================
    MOBILE

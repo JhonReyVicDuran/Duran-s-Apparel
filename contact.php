@@ -1,5 +1,61 @@
 <?php
 session_start();
+require_once "db.php";
+
+$error = "";
+$success = "";
+
+if (!isset($_SESSION["user_id"])) {
+    $error = "You must be logged in to send a message.";
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    if (!isset($_SESSION["user_id"])) {
+
+        $error = "You must be logged in to send a message.";
+
+    } else {
+
+        $full_name = $_SESSION["full_name"];
+        $email = $_SESSION["email"];
+        $subject = trim($_POST["subject"] ?? "");
+        $message = trim($_POST["message"] ?? "");
+
+        if (empty($subject) || empty($message)) {
+
+            $error = "Please fill in the subject and message.";
+
+        } else {
+
+            $stmt = $conn->prepare(
+                "INSERT INTO contact_messages
+                (full_name, email, subject, message)
+                VALUES (?, ?, ?, ?)"
+            );
+
+            $stmt->bind_param(
+                "ssss",
+                $full_name,
+                $email,
+                $subject,
+                $message
+            );
+
+            if ($stmt->execute()) {
+
+                $success = "Your message has been sent successfully!";
+
+            } else {
+
+                $error = "Something went wrong. Please try again.";
+
+            }
+
+            $stmt->close();
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -160,36 +216,70 @@ session_start();
 
             <h2>Send a Message</h2>
 
-            <form>
+            <?php if (!empty($success)): ?>
 
-                <input
-                    type="text"
-                    placeholder="Full Name"
-                    required
-                >
+    <div class="success-message">
+        <?php echo htmlspecialchars($success); ?>
+    </div>
 
-                <input
-                    type="email"
-                    placeholder="Email Address"
-                    required
-                >
+<?php endif; ?>
 
-                <input
-                    type="text"
-                    placeholder="Subject"
-                    required
-                >
 
-                <textarea
-                    placeholder="Your Message"
-                    required
-                ></textarea>
+<?php if (!empty($error)): ?>
 
-                <button type="submit">
-                    SEND MESSAGE
-                </button>
+    <div class="error-message">
+        <?php echo htmlspecialchars($error); ?>
+    </div>
 
-            </form>
+<?php endif; ?>
+
+<?php if (!isset($_SESSION["user_id"])): ?>
+
+    <div class="login-required">
+        Please <a href="login.php">log in</a> to send us a message.
+    </div>
+
+<?php endif; ?>
+
+<form method="POST" action="contact.php">
+
+    <input
+        type="text"
+        value="<?php echo isset($_SESSION["full_name"]) ? htmlspecialchars($_SESSION["full_name"]) : ""; ?>"
+        placeholder="Full Name"
+        readonly
+    >
+
+    <input
+        type="email"
+        value="<?php echo isset($_SESSION["email"]) ? htmlspecialchars($_SESSION["email"]) : ""; ?>"
+        placeholder="Email Address"
+        readonly
+    >
+
+    <input
+        type="text"
+        name="subject"
+        placeholder="Subject"
+        required
+        <?php echo !isset($_SESSION["user_id"]) ? "disabled" : ""; ?>
+    >
+
+    <textarea
+        name="message"
+        placeholder="Your Message"
+        required
+        <?php echo !isset($_SESSION["user_id"]) ? "disabled" : ""; ?>
+    ></textarea>
+
+    <button
+        type="submit"
+        <?php echo !isset($_SESSION["user_id"]) ? "disabled" : ""; ?>
+    >
+        SEND MESSAGE
+    </button>
+
+</form>
 
         </div>
 
@@ -372,6 +462,7 @@ session_start();
 </footer>
 
 <script>
+
 function confirmLogout() {
     return confirm("Are you sure you want to log out?");
 }

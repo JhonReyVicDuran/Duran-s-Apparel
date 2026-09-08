@@ -152,6 +152,54 @@
         background: #ff0505;
     }
 
+.success-message {
+    background: #e8f7e8;
+    color: #267326;
+    border: 1px solid #9bd49b;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.error-message {
+    background: #ffe8e8;
+    color: #d00000;
+    border: 1px solid #ffaaaa;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.login-required {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.login-required a {
+    color: #ff0505;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.contact-form input:disabled,
+.contact-form textarea:disabled {
+    background: #eeeeee;
+    color: #888;
+    cursor: not-allowed;
+}
+
+.contact-form button:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
 @media(max-width:900px){
 
     .contact-container{

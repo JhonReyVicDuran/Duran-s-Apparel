@@ -1,5 +1,27 @@
 <?php
+
 session_start();
+
+require_once "db.php";
+
+
+/* =====================================================
+   GET PRODUCTS FROM DATABASE
+===================================================== */
+
+$sql = "SELECT
+            product_id,
+            product_name,
+            description,
+            price,
+            image,
+            category,
+            stock
+        FROM products
+        ORDER BY product_id ASC";
+
+$result = $conn->query($sql);
+
 ?>
 
 <!DOCTYPE html>
@@ -9,15 +31,27 @@ session_start();
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Collections | DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
-    <link rel="stylesheet" href="logout.css">
+    <link
+        rel="stylesheet"
+        href="logout.css"
+    >
 
-    <link rel="stylesheet" href="collection.css">
+    <link
+        rel="stylesheet"
+        href="collection.css"
+    >
 
 </head>
 
@@ -54,7 +88,10 @@ session_start();
             ABOUT US
         </a>
 
-        <a href="collection.php" class="active">
+        <a
+            href="collection.php"
+            class="active"
+        >
             COLLECTIONS
         </a>
 
@@ -67,30 +104,56 @@ session_start();
 
     <div class="account">
 
-    <?php if (isset($_SESSION["user_id"])): ?>
+        <?php if (isset($_SESSION["user_id"])): ?>
 
-    <span class="user-name">
-        Hello, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
-    </span>
+            <span class="user-name">
 
-    <a href="logout.php" class="login" onclick="openLogoutPopup(event);">
-        Log Out
-    </a>
+                Hello,
+                <?php
+                echo htmlspecialchars(
+                    $_SESSION["full_name"]
+                );
+                ?>
 
-<?php else: ?>
-
-    <a href="login.php" class="login">Log in</a>
-
-    <a href="signup.php" class="signup">Sign up</a>
-
-<?php endif; ?>
+            </span>
 
 
-    <a href="cart.php" class="cart">
-        🛒
-    </a>
+            <a
+                href="logout.php"
+                class="login"
+                onclick="openLogoutPopup(event);"
+            >
+                Log Out
+            </a>
 
-</div>
+        <?php else: ?>
+
+            <a
+                href="login.php"
+                class="login"
+            >
+                Log in
+            </a>
+
+            <a
+                href="signup.php"
+                class="signup"
+            >
+                Sign up
+            </a>
+
+        <?php endif; ?>
+
+
+        <a
+            href="cart.php"
+            class="cart"
+        >
+            🛒
+            <span id="cartCount">0</span>
+        </a>
+
+    </div>
 
 </header>
 
@@ -115,9 +178,11 @@ session_start();
         <div class="hero-line"></div>
 
         <p class="hero-description">
+
             Discover our latest products.
             Designed for comfort, style, and everyday wear.
             Be what you wear.
+
         </p>
 
     </div>
@@ -144,300 +209,238 @@ session_start();
     <div class="collection-grid">
 
 
-        <!-- =================================================
-             HOODIE
-        ================================================== -->
+        <?php if ($result && $result->num_rows > 0): ?>
 
-        <div class="collection-card">
 
-            <div class="collection-image">
+            <?php while ($product = $result->fetch_assoc()): ?>
 
-                <span class="product-badge">
-                    NEW!
-                </span>
-
-                <img
-                    src="images/hoodie.png"
-                    alt="DURAN'S Hoodie"
+                <div
+                    class="collection-card"
+                    data-product-id="<?php
+                        echo $product["product_id"];
+                    ?>"
                 >
 
-            </div>
 
-            <div class="product-info">
+                    <!-- =====================================
+                         PRODUCT IMAGE
+                    ====================================== -->
 
-                <h3>
-                    Hoodie
-                </h3>
+                    <div class="collection-image">
 
-                <p class="product-type">
-                    Hoodie
-                </p>
+                        <?php
+                        if ($product["product_id"] == 1):
+                        ?>
 
-                <div class="product-bottom">
+                            <span class="product-badge">
+                                NEW!
+                            </span>
 
-                    <span class="price">
-                        ₱599
-                    </span>
+                        <?php endif; ?>
 
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
+
+                        <img
+                            src="<?php
+                                echo htmlspecialchars(
+                                    $product["image"]
+                                );
+                            ?>"
+                            alt="<?php
+                                echo htmlspecialchars(
+                                    $product["product_name"]
+                                );
+                            ?>"
+                        >
+
+                    </div>
+
+
+
+                    <!-- =====================================
+                         PRODUCT INFORMATION
+                    ====================================== -->
+
+                    <div class="product-info">
+
+
+                        <h3>
+
+                            <?php
+                            echo htmlspecialchars(
+                                $product["product_name"]
+                            );
+                            ?>
+
+                        </h3>
+
+
+                        <p class="product-type">
+
+                            <?php
+                            echo htmlspecialchars(
+                                $product["category"]
+                            );
+                            ?>
+
+                        </p>
+
+
+
+                        <div class="product-bottom">
+
+
+                            <span class="price">
+
+                                ₱<?php
+                                echo number_format(
+                                    $product["price"],
+                                    2
+                                );
+                                ?>
+
+                            </span>
+
+
+                            <span
+                                class="quantity"
+                                id="stock-<?php
+                                    echo $product["product_id"];
+                                ?>"
+                            >
+
+                                Stock:
+                                <?php
+                                echo $product["stock"];
+                                ?>
+
+                            </span>
+
+
+                        </div>
+
+
+
+                        <!-- =================================
+                             QUANTITY SELECTOR
+                        ================================== -->
+
+                        <?php if ($product["stock"] > 0): ?>
+
+                            <div class="quantity-selector">
+
+                                <button
+                                    type="button"
+                                    onclick="changeQuantity(
+                                        <?php
+                                        echo $product["product_id"];
+                                        ?>,
+                                        -1
+                                    )"
+                                >
+                                    −
+                                </button>
+
+
+                                <input
+                                    type="number"
+                                    id="quantity-<?php
+                                        echo $product["product_id"];
+                                    ?>"
+                                    value="1"
+                                    min="1"
+                                    max="<?php
+                                        echo $product["stock"];
+                                    ?>"
+                                    readonly
+                                >
+
+
+                                <button
+                                    type="button"
+                                    onclick="changeQuantity(
+                                        <?php
+                                        echo $product["product_id"];
+                                        ?>,
+                                        1
+                                    )"
+                                >
+                                    +
+                                </button>
+
+                            </div>
+
+
+
+                            <!-- =================================
+                                 ADD TO CART
+                            ================================== -->
+
+                            <button
+                                type="button"
+                                class="add-cart"
+                                onclick="addToCart(
+                                    <?php
+                                    echo $product["product_id"];
+                                    ?>
+                                )"
+                            >
+
+                                ADD TO CART 🛒
+
+                            </button>
+
+
+                        <?php else: ?>
+
+                            <button
+                                type="button"
+                                class="add-cart"
+                                disabled
+                            >
+
+                                OUT OF STOCK
+
+                            </button>
+
+                        <?php endif; ?>
+
+
+                    </div>
 
                 </div>
 
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
+            <?php endwhile; ?>
 
-            </div>
 
-        </div>
+        <?php else: ?>
 
+            <p>
+                No products available.
+            </p>
 
-
-        <!-- =================================================
-             CAP
-        ================================================== -->
-
-        <div class="collection-card">
-
-            <div class="collection-image">
-
-                <img
-                    src="images/cap.png"
-                    alt="DURAN'S Cap"
-                >
-
-            </div>
-
-            <div class="product-info">
-
-                <h3>
-                    Cap
-                </h3>
-
-                <p class="product-type">
-                    Cap
-                </p>
-
-                <div class="product-bottom">
-
-                    <span class="price">
-                        ₱159
-                    </span>
-
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
-
-                </div>
-
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- =================================================
-             T-SHIRT
-        ================================================== -->
-
-        <div class="collection-card">
-
-            <div class="collection-image">
-
-                <img
-                    src="images/tshirt.png"
-                    alt="DURAN'S T-Shirt"
-                >
-
-            </div>
-
-            <div class="product-info">
-
-                <h3>
-                    T-Shirt
-                </h3>
-
-                <p class="product-type">
-                    T-Shirt
-                </p>
-
-                <div class="product-bottom">
-
-                    <span class="price">
-                        ₱289
-                    </span>
-
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
-
-                </div>
-
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- =================================================
-             SHORTS
-        ================================================== -->
-
-        <div class="collection-card">
-
-            <div class="collection-image">
-
-                <img
-                    src="images/shorts.png"
-                    alt="DURAN'S Shorts"
-                >
-
-            </div>
-
-            <div class="product-info">
-
-                <h3>
-                    Shorts
-                </h3>
-
-                <p class="product-type">
-                    Shorts
-                </p>
-
-                <div class="product-bottom">
-
-                    <span class="price">
-                        ₱249
-                    </span>
-
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
-
-                </div>
-
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- =================================================
-             LONG SLEEVE
-        ================================================== -->
-
-        <div class="collection-card">
-
-            <div class="collection-image">
-
-                <img
-                    src="images/long-sleeve.png"
-                    alt="DURAN'S Long Sleeve"
-                >
-
-            </div>
-
-            <div class="product-info">
-
-                <h3>
-                    Long Sleeve
-                </h3>
-
-                <p class="product-type">
-                    Long Sleeve
-                </p>
-
-                <div class="product-bottom">
-
-                    <span class="price">
-                        ₱479
-                    </span>
-
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
-
-                </div>
-
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- =================================================
-             COMPRESSION SHIRT
-        ================================================== -->
-
-        <div class="collection-card">
-
-            <div class="collection-image">
-
-                <img
-                    src="images/compression.png"
-                    alt="DURAN'S Compression Shirt"
-                >
-
-            </div>
-
-            <div class="product-info">
-
-                <h3>
-                    Compression Shirt
-                </h3>
-
-                <p class="product-type">
-                    Compression Shirt
-                </p>
-
-                <div class="product-bottom">
-
-                    <span class="price">
-                        ₱299
-                    </span>
-
-                    <span class="quantity">
-                        Stock: 10
-                    </span>
-
-                </div>
-
-                <button class="add-cart">
-                    ADD TO CART 🛒
-                </button>
-
-            </div>
-
-        </div>
+        <?php endif; ?>
 
 
     </div>
 
 </section>
 
-<div class="logout-overlay" id="logoutOverlay">
+
+
+<!-- =====================================================
+     LOGOUT POPUP
+===================================================== -->
+
+<div
+    class="logout-overlay"
+    id="logoutOverlay"
+>
 
     <div class="logout-popup">
 
-        <h2>Log Out?</h2>
+        <h2>
+            Log Out?
+        </h2>
 
         <p>
             Are you sure you want to log out?
@@ -468,10 +471,58 @@ session_start();
 </div>
 
 <!-- =====================================================
+     LOGIN REQUIRED POPUP
+===================================================== -->
+
+<div
+    class="login-required-overlay"
+    id="loginRequiredOverlay"
+>
+
+    <div class="login-required-popup">
+
+        <div class="login-required-icon">
+            🔒
+        </div>
+
+        <h2>
+            Login Required
+        </h2>
+
+        <p>
+            You need to log in to your DURAN'S Apparel
+            account before adding products to your cart.
+        </p>
+
+        <div class="login-required-buttons">
+
+            <button
+                type="button"
+                class="login-required-login"
+                onclick="goToLogin();"
+            >
+                LOG IN
+            </button>
+
+            <button
+                type="button"
+                class="login-required-cancel"
+                onclick="closeLoginRequired();"
+            >
+                CANCEL
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================================
      FOOTER
 ===================================================== -->
 
-<footer id="contact">
+<footer>
 
     <div class="footer-brand">
 
@@ -481,18 +532,26 @@ session_start();
         >
 
         <p>
+
             DURAN'S Apparel is more than just apparel.
             It's a lifestyle. Minimal designs, premium
             quality, made just for you.
+
         </p>
 
         <div class="socials">
 
-            <a href="#">f</a>
+            <a href="#">
+                f
+            </a>
 
-            <a href="#">◎</a>
+            <a href="#">
+                ◎
+            </a>
 
-            <a href="#">♪</a>
+            <a href="#">
+                ♪
+            </a>
 
         </div>
 
@@ -579,7 +638,8 @@ session_start();
     <div class="copyright">
 
         <span>
-            © 2026 DURAN'S Apparel. All Rights Reserved
+            © 2026 DURAN'S Apparel.
+            All Rights Reserved
         </span>
 
         <span>
@@ -592,10 +652,229 @@ session_start();
 
 </footer>
 
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
 <script>
-function confirmLogout() {
-    return confirm("Are you sure you want to log out?");
+
+/* =====================================================
+   CHANGE QUANTITY
+===================================================== */
+
+function changeQuantity(productId, change) {
+
+    const quantityInput =
+        document.getElementById(
+            "quantity-" + productId
+        );
+
+
+    if (!quantityInput) {
+        return;
+    }
+
+
+    let quantity =
+        parseInt(quantityInput.value);
+
+
+    const max =
+        parseInt(quantityInput.max);
+
+
+    quantity += change;
+
+
+    if (quantity < 1) {
+
+        quantity = 1;
+
+    }
+
+
+    if (quantity > max) {
+
+        quantity = max;
+
+    }
+
+
+    quantityInput.value = quantity;
+
 }
+
+
+/* =====================================================
+   ADD TO CART
+===================================================== */
+
+function addToCart(productId) {
+
+    const quantityInput =
+        document.getElementById(
+            "quantity-" + productId
+        );
+
+
+    if (!quantityInput) {
+        return;
+    }
+
+
+    const quantity =
+        parseInt(quantityInput.value);
+
+
+    if (!quantity || quantity < 1) {
+
+        alert(
+            "Please select a valid quantity."
+        );
+
+        return;
+
+    }
+
+
+    /* =============================================
+       SEND TO PHP
+    ============================================= */
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "product_id",
+        productId
+    );
+
+    formData.append(
+        "quantity",
+        quantity
+    );
+
+
+    fetch(
+        "add_to_cart.php",
+        {
+            method: "POST",
+            body: formData
+        }
+    )
+
+
+    .then(response => response.json())
+
+
+    .then(data => {
+
+
+        /* =============================================
+           LOGIN REQUIRED
+        ============================================= */
+
+        if (data.login_required) {
+
+    openLoginRequired();
+
+    return;
+
+}
+
+        /* =============================================
+           ERROR
+        ============================================= */
+
+        if (!data.success) {
+
+            alert(data.message);
+
+            return;
+
+        }
+
+
+        /* =============================================
+           SUCCESS
+        ============================================= */
+
+
+        /* =============================================
+           RESET QUANTITY
+        ============================================= */
+
+        quantityInput.value = 1;
+
+
+        /* =============================================
+           UPDATE CART COUNT
+        ============================================= */
+
+        updateCartCount();
+
+    })
+
+
+    .catch(error => {
+
+        console.error(error);
+
+        alert(
+            "Something went wrong while adding the product."
+        );
+
+    });
+
+}
+
+
+/* =====================================================
+   CART COUNT
+===================================================== */
+
+function updateCartCount() {
+
+    fetch("get_cart_count.php")
+
+        .then(response =>
+            response.json()
+        )
+
+        .then(data => {
+
+            const cartCount =
+                document.getElementById(
+                    "cartCount"
+                );
+
+
+            if (cartCount) {
+
+                cartCount.textContent =
+                    data.count;
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+        });
+
+}
+
+
+updateCartCount();
+
+
+/* =====================================================
+   LOGOUT POPUP
+===================================================== */
 
 function openLogoutPopup(event) {
 
@@ -619,10 +898,15 @@ function closeLogoutPopup() {
 
 function confirmLogout() {
 
-    window.location.href = "logout.php";
+    window.location.href =
+        "logout.php";
 
 }
+
+
+
 </script>
+
 
 </body>
 

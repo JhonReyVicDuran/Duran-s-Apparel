@@ -111,9 +111,13 @@
     font-weight: 700;
 
     cursor: pointer;
+
+    transition: 0.3s;
 }
 
 .clear-cart:hover {
+    color: #000;
+
     text-decoration: underline;
 }
 
@@ -125,7 +129,7 @@
 .cart-item {
     display: grid;
 
-    grid-template-columns: 100px 1fr auto auto auto;
+    grid-template-columns: 100px 1fr auto auto 30px;
 
     align-items: center;
 
@@ -169,6 +173,16 @@
     object-fit: contain;
 }
 
+.no-image {
+    color: #999;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    text-align: center;
+}
+
 
 /* =====================================================
    PRODUCT INFO
@@ -188,6 +202,14 @@
     color: #666;
 
     font-size: 14px;
+
+    margin-bottom: 5px;
+}
+
+.stock-info {
+    color: #888;
+
+    font-size: 12px;
 }
 
 
@@ -200,7 +222,11 @@
 
     align-items: center;
 
+    justify-content: center;
+
     border: 1px solid #ccc;
+
+    height: 34px;
 }
 
 .quantity button {
@@ -214,7 +240,11 @@
 
     font-size: 18px;
 
+    font-weight: 700;
+
     cursor: pointer;
+
+    transition: 0.2s;
 }
 
 .quantity button:hover {
@@ -226,11 +256,25 @@
 .quantity span {
     min-width: 35px;
 
+    height: 32px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
     text-align: center;
 
     font-size: 14px;
 
+    color: black;
+
     font-weight: 700;
+
+    border-left: 1px solid #ddd;
+
+    border-right: 1px solid #ddd;
 }
 
 
@@ -260,19 +304,31 @@
 
     height: 30px;
 
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
     background: none;
 
     border: none;
 
     color: #999;
 
-    font-size: 24px;
+    font-size: 25px;
+
+    line-height: 1;
 
     cursor: pointer;
+
+    transition: 0.2s;
 }
 
 .remove-button:hover {
     color: #ff0505;
+
+    transform: scale(1.1);
 }
 
 
@@ -283,7 +339,7 @@
 .empty-cart {
     text-align: center;
 
-    padding: 60px 20px;
+    padding: 70px 20px;
 }
 
 .empty-cart-icon {
@@ -296,6 +352,8 @@
     font-size: 25px;
 
     margin-bottom: 10px;
+
+    color: #000;
 }
 
 .empty-cart p {
@@ -320,6 +378,8 @@
     font-weight: 800;
 
     text-decoration: none;
+
+    transition: 0.3s;
 }
 
 .empty-cart a:hover {
@@ -394,6 +454,8 @@
 .summary-total span:first-child {
     font-size: 16px;
 
+    color: #ff0505;
+
     font-weight: 900;
 }
 
@@ -453,6 +515,8 @@
     font-weight: 700;
 
     text-decoration: none;
+
+    transition: 0.3s;
 }
 
 .continue-shopping:hover {
@@ -470,7 +534,75 @@
 
 
 /* =====================================================
+   CART COUNT
+===================================================== */
+
+.cart {
+    position: relative;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 2px;
+}
+
+#cartCount {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 18px;
+
+    height: 18px;
+
+    padding: 2px 5px;
+
+    background: #ff0505;
+
+    color: #fff;
+
+    border-radius: 50%;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    line-height: 1;
+}
+
+
+/* =====================================================
    RESPONSIVE
+===================================================== */
+
+@media (max-width: 1050px) {
+
+    .cart-content {
+        grid-template-columns: 1fr 320px;
+
+        gap: 20px;
+    }
+
+    .cart-item {
+        grid-template-columns: 90px 1fr auto auto 30px;
+
+        gap: 15px;
+    }
+
+    .product-image {
+        width: 90px;
+
+        height: 100px;
+    }
+
+}
+
+
+/* =====================================================
+   TABLET
 ===================================================== */
 
 @media (max-width: 900px) {
@@ -486,65 +618,202 @@
 }
 
 
+/* =====================================================
+   MOBILE
+===================================================== */
+
 @media (max-width: 700px) {
 
     .cart-page {
         padding: 110px 15px 50px;
     }
 
+
+    .cart-title {
+        margin-bottom: 30px;
+    }
+
+
     .cart-title h1 {
         font-size: 32px;
     }
+
+
+    .cart-title p {
+        font-size: 13px;
+    }
+
 
     .cart-items-section {
         padding: 20px;
     }
 
+
     .cart-item {
         grid-template-columns: 80px 1fr auto;
 
         gap: 15px;
+
+        padding: 20px 0;
     }
+
 
     .product-image {
         width: 80px;
+
         height: 90px;
+
+        grid-column: 1;
+
+        grid-row: 1 / span 2;
     }
+
+
+    .product-info {
+        grid-column: 2;
+
+        grid-row: 1;
+    }
+
 
     .quantity {
         grid-column: 2;
+
+        grid-row: 2;
+
         justify-self: start;
     }
 
+
     .item-total {
         grid-column: 3;
+
         grid-row: 1;
 
         min-width: auto;
+
+        font-size: 14px;
+
+        text-align: right;
     }
+
 
     .remove-button {
         grid-column: 3;
+
         grid-row: 2;
+
+        justify-self: end;
     }
 
-}
-
-
-@media (max-width: 500px) {
 
     .section-header {
-        align-items: flex-start;
+        align-items: center;
 
         gap: 10px;
     }
+
 
     .section-header h2 {
         font-size: 18px;
     }
 
+
+    .clear-cart {
+        font-size: 11px;
+    }
+
+
     .cart-summary {
         padding: 22px;
+    }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 500px) {
+
+    .cart-page {
+        padding-left: 10px;
+
+        padding-right: 10px;
+    }
+
+
+    .cart-items-section {
+        padding: 15px;
+    }
+
+
+    .cart-item {
+        grid-template-columns: 65px 1fr auto;
+
+        gap: 10px;
+    }
+
+
+    .product-image {
+        width: 65px;
+
+        height: 75px;
+    }
+
+
+    .product-info h3 {
+        font-size: 14px;
+    }
+
+
+    .product-price {
+        font-size: 12px;
+    }
+
+
+    .stock-info {
+        font-size: 11px;
+    }
+
+
+    .quantity button {
+        width: 28px;
+
+        height: 30px;
+    }
+
+
+    .quantity span {
+        min-width: 30px;
+
+        height: 30px;
+    }
+
+
+    .item-total {
+        font-size: 12px;
+    }
+
+
+    .remove-button {
+        font-size: 22px;
+    }
+
+
+    .empty-cart {
+        padding: 50px 15px;
+    }
+
+
+    .empty-cart-icon {
+        font-size: 45px;
+    }
+
+
+    .empty-cart h2 {
+        font-size: 21px;
     }
 
 }

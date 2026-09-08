@@ -17,6 +17,8 @@ session_start();
 
     <link rel="stylesheet" href="about.css">
 
+    <link rel="stylesheet" href="collection.css">
+
 </head>
 
 <body>

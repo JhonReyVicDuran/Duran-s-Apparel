@@ -1,202 +1,578 @@
 <?php
 session_start();
+require_once "db.php";
+
+/* =====================================================
+   CHECK LOGIN
+===================================================== */
+
+if (!isset($_SESSION["user_id"])) {
+    header("Location: login.php");
+    exit;
+}
+
+$user_id = intval($_SESSION["user_id"]);
+
+
+/* =====================================================
+   GET USER CART
+===================================================== */
+
+$sql = "
+    SELECT 
+        c.cart_item_id,
+        c.product_id,
+        c.quantity,
+        p.product_name,
+        p.description,
+        p.price,
+        p.image,
+        p.stock
+    FROM cart_items c
+    INNER JOIN products p
+        ON c.product_id = p.product_id
+    WHERE c.user_id = ?
+    ORDER BY c.created_at DESC
+";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+
+$result = $stmt->get_result();
+
+$cart_items = [];
+
+while ($row = $result->fetch_assoc()) {
+
+    /*
+       Prevent displaying a quantity greater
+       than the current available stock.
+    */
+
+    if ($row["quantity"] > $row["stock"]) {
+        $row["quantity"] = intval($row["stock"]);
+    }
+
+    $cart_items[] = $row;
+}
+
+$stmt->close();
+
+
+/* =====================================================
+   CALCULATE TOTAL
+===================================================== */
+
+$subtotal = 0;
+$total_items = 0;
+
+foreach ($cart_items as $item) {
+
+    $item_total =
+        floatval($item["price"]) *
+        intval($item["quantity"]);
+
+    $subtotal += $item_total;
+
+    $total_items += intval($item["quantity"]);
+}
+
+$total = $subtotal;
+
+
+/* =====================================================
+   USER INFORMATION
+===================================================== */
+
+$full_name = $_SESSION["full_name"] ?? "User";
+$email = $_SESSION["email"] ?? "";
+
+
+/* =====================================================
+   CART COUNT
+===================================================== */
+
+$cart_count = 0;
+
+$count_stmt = $conn->prepare("
+    SELECT COALESCE(SUM(quantity), 0) AS total
+    FROM cart_items
+    WHERE user_id = ?
+");
+
+$count_stmt->bind_param("i", $user_id);
+$count_stmt->execute();
+
+$count_result = $count_stmt->get_result();
+$count_row = $count_result->fetch_assoc();
+
+$cart_count = intval($count_row["total"]);
+
+$count_stmt->close();
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Shopping Cart | DURAN'S Apparel</title>
+    <title>Your Cart | DURAN'S Apparel</title>
 
     <link rel="stylesheet" href="style.css">
 
     <link rel="stylesheet" href="logout.css">
 
     <link rel="stylesheet" href="cart.css">
+
 </head>
 
 <body>
 
-    <!-- ================= NAVBAR ================= -->
 
-    <header class="navbar">
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
 
-        <div class="logo">
-            <a href="index.php">
-                <img src="images/logo.png">
-            </a>
+<header class="navbar">
+
+    <div class="logo">
+
+        <a href="index.php">
+
+            <img
+                src="images/logo.png"
+                alt="DURAN'S Apparel Logo"
+            >
+
+        </a>
+
+    </div>
+
+
+    <nav class="menu">
+
+        <a href="index.php">
+            HOME
+        </a>
+
+        <a href="about.php">
+            ABOUT US
+        </a>
+
+        <a href="collection.php">
+            COLLECTIONS
+        </a>
+
+        <a href="contact.php">
+            CONTACT US
+        </a>
+
+    </nav>
+
+
+    <div class="account">
+
+        <span class="user-name">
+            Hello, <?= htmlspecialchars($full_name); ?>
+        </span>
+
+
+        <!-- LOG OUT -->
+
+        <a
+            href="logout.php"
+            class="login logout-link"
+            onclick="openLogoutPopup(event);"
+        >
+            Log Out
+        </a>
+
+
+        <!-- CART -->
+
+        <a
+            href="cart.php"
+            class="cart cart-active"
+        >
+
+            🛒
+
+            <span id="cartCount">
+                <?= $cart_count; ?>
+            </span>
+
+        </a>
+
+    </div>
+
+</header>
+
+
+
+<!-- =====================================================
+     CART PAGE
+===================================================== -->
+
+<main class="cart-page">
+
+    <div class="cart-wrapper">
+
+
+        <!-- =================================================
+             TITLE
+        ================================================= -->
+
+        <div class="cart-title">
+
+            <h1>
+                Your <span>Cart</span>
+            </h1>
+
+            <p>
+                Review your selected DURAN'S Apparel products before checkout.
+            </p>
+
         </div>
 
-        <nav class="menu">
-
-            <a href="index.php">HOME</a>
-
-            <a href="about.php">ABOUT US</a>
-
-            <a href="collection.php">COLLECTIONS</a>
-
-            <a href="contact.php">CONTACT US</a>
-
-        </nav>
-
-        <div class="account">
-
-    <?php if (isset($_SESSION["user_id"])): ?>
-
-    <span class="user-name">
-        Hello, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
-    </span>
-
-    <a href="logout.php" class="login" onclick="openLogoutPopup(event);">
-        Log Out
-    </a>
-
-<?php else: ?>
-
-    <a href="login.php" class="login">Log in</a>
-
-    <a href="signup.php" class="signup">Sign up</a>
-
-<?php endif; ?>
 
 
-    <a href="cart.php" class="cart">
-        🛒
-    </a>
-
-</div>
-
-    </header>
+        <?php if (count($cart_items) > 0): ?>
 
 
-    <!-- ================= CART PAGE ================= -->
+        <!-- =================================================
+             CART CONTENT
+        ================================================= -->
 
-    <main class="cart-page">
-
-        <div class="cart-wrapper">
-
-            <div class="cart-title">
-
-                <h1>
-                    YOUR <span>CART</span>
-                </h1>
-
-                <p>
-                    Review your selected items before checkout.
-                </p>
-
-            </div>
+        <div class="cart-content">
 
 
-            <!-- CART CONTENT -->
+            <!-- =================================================
+                 CART ITEMS
+            ================================================= -->
 
-            <div class="cart-content">
-
-                <!-- PRODUCTS -->
-
-                <section class="cart-items-section">
-
-                    <div class="section-header">
-
-                        <h2>
-                            Shopping Cart
-                        </h2>
-
-                        <button
-                            class="clear-cart"
-                            onclick="clearCart()"
-                        >
-                            Clear Cart
-                        </button>
-
-                    </div>
+            <section class="cart-items-section">
 
 
-                    <div id="cartItems">
-
-                        <!-- Products will appear here -->
-
-                    </div>
-
-                </section>
-
-
-                <!-- ORDER SUMMARY -->
-
-                <aside class="cart-summary">
+                <div class="section-header">
 
                     <h2>
-                        ORDER SUMMARY
+                        Shopping Cart
                     </h2>
 
-                    <div class="summary-row">
-
-                        <span>
-                            Subtotal
-                        </span>
-
-                        <span id="subtotal">
-                            ₱0.00
-                        </span>
-
-                    </div>
-
-                    <div class="summary-row">
-
-                        <span>
-                            Shipping
-                        </span>
-
-                        <span id="shipping">
-                            FREE
-                        </span>
-
-                    </div>
-
-                    <div class="summary-line"></div>
-
-                    <div class="summary-total">
-
-                        <span>
-                            Total
-                        </span>
-
-                        <span id="total">
-                            ₱0.00
-                        </span>
-
-                    </div>
 
                     <button
-                        class="checkout-button"
-                        onclick="checkout()"
+                        type="button"
+                        class="clear-cart"
+                        onclick="clearCart();"
                     >
-                        PROCEED TO CHECKOUT
+                        CLEAR CART
                     </button>
 
-                    <a
-                        href="collection.php"
-                        class="continue-shopping"
+                </div>
+
+
+
+                <div id="cartItems">
+
+
+                    <?php foreach ($cart_items as $item): ?>
+
+                    <?php
+
+                    $cart_item_id =
+                        intval($item["cart_item_id"]);
+
+                    $product_id =
+                        intval($item["product_id"]);
+
+                    $quantity =
+                        intval($item["quantity"]);
+
+                    $stock =
+                        intval($item["stock"]);
+
+                    $price =
+                        floatval($item["price"]);
+
+                    $item_total =
+                        $price * $quantity;
+
+                    ?>
+
+
+                    <div
+                        class="cart-item"
+                        id="cart-item-<?= $cart_item_id; ?>"
                     >
-                        ← Continue Shopping
-                    </a>
 
-                </aside>
 
-            </div>
+                        <!-- PRODUCT IMAGE -->
+
+                        <div class="product-image">
+
+                            <?php if (!empty($item["image"])): ?>
+
+                                <img
+                                    src="<?= htmlspecialchars($item["image"]); ?>"
+                                    alt="<?= htmlspecialchars($item["product_name"]); ?>"
+                                >
+
+                            <?php else: ?>
+
+                                <div class="no-image">
+                                    NO IMAGE
+                                </div>
+
+                            <?php endif; ?>
+
+                        </div>
+
+
+
+                        <!-- PRODUCT INFO -->
+
+                        <div class="product-info">
+
+                            <h3>
+                                <?= htmlspecialchars($item["product_name"]); ?>
+                            </h3>
+
+                            <p class="product-price">
+
+                                ₱<?= number_format($price, 2); ?>
+
+                            </p>
+
+                            <p class="stock-info">
+
+                                <?= $stock; ?> available
+
+                            </p>
+
+                        </div>
+
+
+
+                        <!-- QUANTITY -->
+
+                        <div class="quantity">
+
+                            <button
+                                type="button"
+                                onclick="changeQuantity(
+                                    <?= $cart_item_id; ?>,
+                                    -1,
+                                    <?= $stock; ?>
+                                );"
+                            >
+                                −
+                            </button>
+
+
+                            <span
+                                id="quantity-<?= $cart_item_id; ?>"
+                            >
+                                <?= $quantity; ?>
+                            </span>
+
+
+                            <button
+                                type="button"
+                                onclick="changeQuantity(
+                                    <?= $cart_item_id; ?>,
+                                    1,
+                                    <?= $stock; ?>
+                                );"
+                            >
+                                +
+                            </button>
+
+                        </div>
+
+
+
+                        <!-- ITEM TOTAL -->
+
+                        <div class="item-total">
+
+                            ₱<?= number_format($item_total, 2); ?>
+
+                        </div>
+
+
+
+                        <!-- REMOVE -->
+
+                        <button
+                            type="button"
+                            class="remove-button"
+                            title="Remove item"
+                            onclick="removeItem(
+                                <?= $cart_item_id; ?>
+                            );"
+                        >
+                            ×
+                        </button>
+
+
+                    </div>
+
+                    <?php endforeach; ?>
+
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 ORDER SUMMARY
+            ================================================= -->
+
+            <aside class="cart-summary">
+
+                <h2>
+                    Order Summary
+                </h2>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Items
+                    </span>
+
+                    <span id="summaryItems">
+                        <?= $total_items; ?>
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                    <span id="summarySubtotal">
+                        ₱<?= number_format($subtotal, 2); ?>
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Shipping
+                    </span>
+
+                    <span>
+                        FREE
+                    </span>
+
+                </div>
+
+
+                <div class="summary-line"></div>
+
+
+                <div class="summary-total">
+
+                    <span>
+                        TOTAL
+                    </span>
+
+                    <span id="summaryTotal">
+                        ₱<?= number_format($total, 2); ?>
+                    </span>
+
+                </div>
+
+
+                <!-- CHECKOUT -->
+
+                <button
+                    type="button"
+                    class="checkout-button"
+                    onclick="goToCheckout();"
+                >
+                    PROCEED TO CHECKOUT
+                </button>
+
+
+                <a
+                    href="collection.php"
+                    class="continue-shopping"
+                >
+                    ← CONTINUE SHOPPING
+                </a>
+
+            </aside>
+
 
         </div>
 
-    </main>
 
-    <div class="logout-overlay" id="logoutOverlay">
+        <?php else: ?>
+
+
+        <!-- =================================================
+             EMPTY CART
+        ================================================= -->
+
+        <section class="cart-items-section empty-cart">
+
+            <div class="empty-cart-icon">
+                🛒
+            </div>
+
+            <h2>
+                Your Cart Is Empty
+            </h2>
+
+            <p>
+                You haven't added any products to your cart yet.
+            </p>
+
+            <a href="collection.php">
+                SHOP NOW
+            </a>
+
+        </section>
+
+
+        <?php endif; ?>
+
+
+    </div>
+
+</main>
+
+
+
+<!-- =====================================================
+     LOGOUT POPUP
+===================================================== -->
+
+<div
+    class="logout-overlay"
+    id="logoutOverlay"
+>
 
     <div class="logout-popup">
 
-        <h2>Log Out?</h2>
+        <h2>
+            Log Out?
+        </h2>
 
         <p>
             Are you sure you want to log out?
@@ -226,435 +602,271 @@ session_start();
 
 </div>
 
+
+
 <!-- =====================================================
-     FOOTER
+     JAVASCRIPT
 ===================================================== -->
 
-<footer id="contact">
+<script>
 
-    <div class="footer-brand">
 
-        <img
-            src="images/logo.png"
-            alt="DURAN'S Apparel"
-        >
+/* =====================================================
+   CHANGE QUANTITY
+===================================================== */
 
+function changeQuantity(
+    cartItemId,
+    change,
+    maxStock
+) {
 
-        <p>
-            DURAN'S Apparel is more than just apparel.
-            It's a lifestyle. Minimal designs, premium
-            quality, made just for you.
-        </p>
+    const quantityElement =
+        document.getElementById(
+            "quantity-" + cartItemId
+        );
 
 
-        <div class="socials">
+    if (!quantityElement) {
+        return;
+    }
 
-            <a href="#">f</a>
 
-            <a href="#">◎</a>
+    let currentQuantity =
+        parseInt(
+            quantityElement.textContent
+        );
 
-            <a href="#">♪</a>
 
-        </div>
+    let newQuantity =
+        currentQuantity + change;
 
-    </div>
 
+    /* Minimum */
 
+    if (newQuantity < 1) {
 
-    <div class="footer-column">
+        newQuantity = 1;
 
-        <h3>
-            SHOP
-        </h3>
+    }
 
-        <a href="collection.php">
-            New Arrivals
-        </a>
 
-        <a href="collection.php">
-            T-Shirts
-        </a>
+    /* Maximum */
 
-        <a href="collection.php">
-            Hoodies
-        </a>
+    if (newQuantity > maxStock) {
 
-        <a href="collection.php">
-            Pants
-        </a>
+        return;
+    }
 
-        <a href="collection.php">
-            Jackets
-        </a>
 
-        <a href="collection.php">
-            Accessories
-        </a>
+    /* No change */
 
-        <a href="collection.php">
-            Sale
-        </a>
+    if (newQuantity === currentQuantity) {
 
-    </div>
+        return;
 
+    }
 
 
-    <div class="footer-column">
+    /* Disable buttons while updating */
 
-        <h3>
-            CUSTOMER CARE
-        </h3>
+    const cartItem =
+        document.getElementById(
+            "cart-item-" + cartItemId
+        );
 
-        <a href="about.php">
-            About Us
-        </a>
 
-        <a href="#">
-            Size Guide
-        </a>
+    const buttons =
+        cartItem.querySelectorAll(
+            ".quantity button"
+        );
 
-        <a href="#">
-            Shipping & Delivery
-        </a>
 
-        <a href="#">
-            Returns & Exchanges
-        </a>
+    buttons.forEach(button => {
 
-        <a href="#">
-            FAQs
-        </a>
+        button.disabled = true;
 
-        <a href="contact.php">
-            Contact Us
-        </a>
+    });
 
-        <a href="#">
-            Track Order
-        </a>
 
-    </div>
+    /* Send update */
 
+    fetch("update_cart.php", {
 
+        method: "POST",
 
-    <div class="copyright">
+        headers: {
+            "Content-Type":
+                "application/x-www-form-urlencoded"
+        },
 
-        <span>
-            © 2026 DURAN'S Apparel. All Rights Reserved
-        </span>
+        body:
+            "cart_item_id=" +
+            encodeURIComponent(cartItemId) +
+            "&quantity=" +
+            encodeURIComponent(newQuantity)
 
-        <span>
-            Privacy Policy |
-            Terms & Conditions |
-            Cookies Policy
-        </span>
+    })
 
-    </div>
+    .then(response => response.json())
 
-</footer>
+    .then(data => {
 
+        if (data.success) {
 
-    <!-- ================= JAVASCRIPT ================= -->
+            location.reload();
 
-    <script>
-
-        let cart =
-            JSON.parse(localStorage.getItem("duranCart")) || [];
-
-
-        /* =====================================================
-           DISPLAY CART
-        ===================================================== */
-
-        function displayCart() {
-
-            const cartItems =
-                document.getElementById("cartItems");
-
-            if (cart.length === 0) {
-
-                cartItems.innerHTML = `
-
-                    <div class="empty-cart">
-
-                        <div class="empty-cart-icon">
-                            🛒
-                        </div>
-
-                        <h2>
-                            Your cart is empty
-                        </h2>
-
-                        <p>
-                            Looks like you haven't added
-                            anything to your cart yet.
-                        </p>
-
-                        <a href="collection.php">
-                            SHOP NOW
-                        </a>
-
-                    </div>
-
-                `;
-
-                updateSummary();
-
-                return;
-            }
-
-
-            cartItems.innerHTML = "";
-
-
-            cart.forEach((item, index) => {
-
-                const itemTotal =
-                    Number(item.price) * Number(item.quantity);
-
-
-                const cartItem =
-                    document.createElement("div");
-
-                cartItem.className = "cart-item";
-
-
-                cartItem.innerHTML = `
-
-                    <div class="product-image">
-
-                        <img
-                            src="${item.image}"
-                            alt="${item.name}"
-                        >
-
-                    </div>
-
-
-                    <div class="product-info">
-
-                        <h3>
-                            ${item.name}
-                        </h3>
-
-                        <p class="product-price">
-                            ₱${Number(item.price).toFixed(2)}
-                        </p>
-
-                    </div>
-
-
-                    <div class="quantity">
-
-                        <button
-                            onclick="changeQuantity(${index}, -1)"
-                        >
-                            −
-                        </button>
-
-                        <span>
-                            ${item.quantity}
-                        </span>
-
-                        <button
-                            onclick="changeQuantity(${index}, 1)"
-                        >
-                            +
-                        </button>
-
-                    </div>
-
-
-                    <div class="item-total">
-
-                        ₱${itemTotal.toFixed(2)}
-
-                    </div>
-
-
-                    <button
-                        class="remove-button"
-                        onclick="removeItem(${index})"
-                        title="Remove item"
-                    >
-                        ×
-                    </button>
-
-                `;
-
-
-                cartItems.appendChild(cartItem);
-
-            });
-
-
-            updateSummary();
-
-        }
-
-
-        /* =====================================================
-           CHANGE QUANTITY
-        ===================================================== */
-
-        function changeQuantity(index, amount) {
-
-            cart[index].quantity += amount;
-
-
-            if (cart[index].quantity <= 0) {
-
-                cart.splice(index, 1);
-
-            }
-
-
-            saveCart();
-
-        }
-
-
-        /* =====================================================
-           REMOVE ITEM
-        ===================================================== */
-
-        function removeItem(index) {
-
-            cart.splice(index, 1);
-
-            saveCart();
-
-        }
-
-
-        /* =====================================================
-           CLEAR CART
-        ===================================================== */
-
-        function clearCart() {
-
-            if (cart.length === 0) {
-                return;
-            }
-
-
-            const confirmClear =
-                confirm("Are you sure you want to clear your cart?");
-
-
-            if (confirmClear) {
-
-                cart = [];
-
-                saveCart();
-
-            }
-
-        }
-
-
-        /* =====================================================
-           SAVE CART
-        ===================================================== */
-
-        function saveCart() {
-
-            localStorage.setItem(
-                "duranCart",
-                JSON.stringify(cart)
-            );
-
-            displayCart();
-
-            updateCartCount();
-
-        }
-
-
-        /* =====================================================
-           UPDATE SUMMARY
-        ===================================================== */
-
-        function updateSummary() {
-
-            let subtotal = 0;
-
-
-            cart.forEach(item => {
-
-                subtotal +=
-                    Number(item.price) *
-                    Number(item.quantity);
-
-            });
-
-
-            document.getElementById("subtotal").textContent =
-                "₱" + subtotal.toFixed(2);
-
-
-            document.getElementById("total").textContent =
-                "₱" + subtotal.toFixed(2);
-
-        }
-
-
-        /* =====================================================
-           UPDATE CART COUNT
-        ===================================================== */
-
-        function updateCartCount() {
-
-            const count =
-                cart.reduce(
-                    (total, item) =>
-                        total + Number(item.quantity),
-                    0
-                );
-
-
-            document.getElementById("cartCount").textContent =
-                count;
-
-        }
-
-
-        /* =====================================================
-           CHECKOUT
-        ===================================================== */
-
-        function checkout() {
-
-            if (cart.length === 0) {
-
-                alert(
-                    "Your cart is empty. Please add a product first."
-                );
-
-                return;
-
-            }
-
+        } else {
 
             alert(
-                "Checkout will be available soon!"
+                data.message ||
+                "Unable to update cart."
+            );
+
+            buttons.forEach(button => {
+
+                button.disabled = false;
+
+            });
+
+        }
+
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        alert(
+            "Something went wrong while updating the cart."
+        );
+
+        buttons.forEach(button => {
+
+            button.disabled = false;
+
+        });
+
+    });
+
+}
+
+
+
+/* =====================================================
+   REMOVE ITEM
+===================================================== */
+
+function removeItem(cartItemId) {
+
+    fetch("remove_from_cart.php", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type":
+                "application/x-www-form-urlencoded"
+        },
+
+        body:
+            "cart_item_id=" +
+            encodeURIComponent(cartItemId)
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if (data.success) {
+
+            location.reload();
+
+        } else {
+
+            alert(
+                data.message ||
+                "Unable to remove item."
             );
 
         }
 
+    })
 
-        /* =====================================================
-           INITIALIZE
-        ===================================================== */
+    .catch(error => {
 
-        displayCart();
+        console.error(error);
 
-        updateCartCount();
+        alert(
+            "Something went wrong while removing the item."
+        );
 
-    
-    function confirmLogout() {
-        return confirm("Are you sure you want to log out?");
-    }
+    });
+
+}
+
+
+
+/* =====================================================
+   CLEAR CART
+===================================================== */
+
+function clearCart() {
+
+    fetch("clear_cart.php", {
+
+        method: "POST"
+
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if (data.success) {
+
+            location.reload();
+
+        } else {
+
+            alert(
+                data.message ||
+                "Unable to clear cart."
+            );
+
+        }
+
+    })
+
+    .catch(error => {
+
+        console.error(error);
+
+        alert(
+            "Something went wrong while clearing your cart."
+        );
+
+    });
+
+}
+
+
+
+/* =====================================================
+   CHECKOUT
+===================================================== */
+
+function goToCheckout() {
+
+    window.location.href = "checkout.php";
+
+}
+
+
+
+/* =====================================================
+   LOGOUT POPUP
+===================================================== */
 
 function openLogoutPopup(event) {
 
@@ -682,7 +894,29 @@ function confirmLogout() {
 
 }
 
+
+/* =====================================================
+   CLOSE LOGOUT POPUP OUTSIDE
+===================================================== */
+
+document
+    .getElementById("logoutOverlay")
+    .addEventListener(
+        "click",
+        function(event) {
+
+            if (event.target === this) {
+
+                closeLogoutPopup();
+
+            }
+
+        }
+    );
+
+
 </script>
+
 
 </body>
 

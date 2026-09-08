@@ -30,8 +30,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
 
+    $remember = isset($_POST["remember"]);
 
-    /* CHECK EMPTY FIELDS */
+
+    /* =================================================
+       CHECK EMPTY FIELDS
+    ================================================= */
 
     if (empty($email) || empty($password)) {
 
@@ -40,7 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
 
-    /* CHECK EMAIL FORMAT */
+    /* =================================================
+       CHECK EMAIL FORMAT
+    ================================================= */
 
     elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
@@ -81,12 +87,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                CHECK PASSWORD
             ================================================= */
 
-            if (
-                password_verify(
-                    $password,
-                    $user["password"]
-                )
-            ) {
+            if (password_verify(
+                $password,
+                $user["password"]
+            )) {
+
 
                 /* =============================================
                    CREATE LOGIN SESSION
@@ -105,6 +110,54 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
                 /* =============================================
+                   REMEMBER ME
+                ============================================= */
+
+                /*
+                   The actual email and password will be
+                   remembered by JavaScript localStorage.
+
+                   The password is NOT saved in MySQL.
+                */
+
+                if ($remember) {
+
+                    /*
+                       Set a normal cookie to tell the
+                       login page that Remember Me is enabled.
+                    */
+
+                    setcookie(
+                        "remember_me",
+                        "1",
+                        [
+                            "expires" => time() + (30 * 24 * 60 * 60),
+                            "path" => "/",
+                            "secure" => isset($_SERVER["HTTPS"]),
+                            "httponly" => false,
+                            "samesite" => "Lax"
+                        ]
+                    );
+
+                } else {
+
+                    /*
+                       Remove Remember Me cookie.
+                    */
+
+                    setcookie(
+                        "remember_me",
+                        "",
+                        [
+                            "expires" => time() - 3600,
+                            "path" => "/"
+                        ]
+                    );
+
+                }
+
+
+                /* =============================================
                    LOGIN SUCCESS
                 ============================================= */
 
@@ -115,7 +168,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             else {
 
-                $error = "Incorrect email or password.";
+                $error =
+                    "Incorrect email or password.";
 
             }
 
@@ -123,7 +177,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         else {
 
-            $error = "Incorrect email or password.";
+            $error =
+                "Incorrect email or password.";
 
         }
 
@@ -322,11 +377,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         id="email"
                         name="email"
                         placeholder="Enter your email"
-                        value="<?php
-                            echo htmlspecialchars(
-                                $_POST["email"] ?? ""
-                            );
-                        ?>"
                         required
                     >
 
@@ -425,6 +475,136 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </p>
 
     </footer>
+
+
+
+    <!-- =====================================================
+         REMEMBER ME SCRIPT
+    ===================================================== -->
+
+    <script>
+
+    /* =====================================================
+       GET LOGIN FORM
+    ===================================================== */
+
+    const loginForm =
+        document.getElementById("loginForm");
+
+    const emailInput =
+        document.getElementById("email");
+
+    const passwordInput =
+        document.getElementById("password");
+
+    const rememberCheckbox =
+        document.getElementById("remember");
+
+
+    /* =====================================================
+       LOAD REMEMBERED LOGIN INFORMATION
+    ===================================================== */
+
+    window.addEventListener("DOMContentLoaded", function () {
+
+        const savedEmail =
+            localStorage.getItem("duranRememberEmail");
+
+        const savedPassword =
+            localStorage.getItem("duranRememberPassword");
+
+        const rememberMe =
+            getCookie("remember_me");
+
+
+        if (
+            rememberMe === "1" &&
+            savedEmail &&
+            savedPassword
+        ) {
+
+            emailInput.value =
+                savedEmail;
+
+            passwordInput.value =
+                savedPassword;
+
+            rememberCheckbox.checked =
+                true;
+
+        }
+
+    });
+
+
+    /* =====================================================
+       SAVE LOGIN INFORMATION
+    ===================================================== */
+
+    loginForm.addEventListener("submit", function () {
+
+        if (rememberCheckbox.checked) {
+
+            localStorage.setItem(
+                "duranRememberEmail",
+                emailInput.value
+            );
+
+            localStorage.setItem(
+                "duranRememberPassword",
+                passwordInput.value
+            );
+
+        } else {
+
+            localStorage.removeItem(
+                "duranRememberEmail"
+            );
+
+            localStorage.removeItem(
+                "duranRememberPassword"
+            );
+
+        }
+
+    });
+
+
+    /* =====================================================
+       GET COOKIE
+    ===================================================== */
+
+    function getCookie(name) {
+
+        const cookies =
+            document.cookie.split(";");
+
+        for (
+            let i = 0;
+            i < cookies.length;
+            i++
+        ) {
+
+            const cookie =
+                cookies[i].trim();
+
+            if (
+                cookie.indexOf(name + "=") === 0
+            ) {
+
+                return cookie.substring(
+                    name.length + 1
+                );
+
+            }
+
+        }
+
+        return null;
+
+    }
+
+    </script>
 
 
 </body>
