@@ -1,0 +1,966 @@
+/* =====================================================
+   RESET
+===================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f5f5;
+    color: #111;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
+}
+
+
+/* =====================================================
+   ADMIN LOGIN
+===================================================== */
+
+.login-body {
+    min-height: 100vh;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    padding: 45px 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.login-logo {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #000;
+    margin-bottom: 30px;
+}
+
+.login-logo span {
+    display: block;
+    color: #ff0505;
+    font-size: 13px;
+    letter-spacing: 4px;
+    margin-top: 4px;
+}
+
+.login-box h1 {
+    text-align: center;
+    font-size: 25px;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    text-align: center;
+    color: #777;
+    font-size: 13px;
+    margin-bottom: 28px;
+}
+
+.login-error {
+    background: #ffe5e5;
+    border-left: 4px solid #ff0505;
+    color: #d00000;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.login-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.login-form-group label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.login-form-group input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.login-form-group input:focus {
+    border-color: #000;
+}
+
+.login-btn {
+    width: 100%;
+    border: none;
+    background: #ff0505;
+    color: #fff;
+    padding: 14px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 5px;
+}
+
+.login-btn:hover {
+    background: #000;
+}
+
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 25px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    transition: 0.3s;
+}
+
+.back-link:hover {
+    color: #ff0505;
+}
+
+
+/* =====================================================
+   ADMIN LAYOUT
+===================================================== */
+
+.admin-layout {
+    min-height: 100vh;
+    display: flex;
+}
+
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+
+.sidebar {
+    width: 245px;
+    min-height: 100vh;
+    background: #000;
+    color: #fff;
+    position: fixed;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.sidebar-logo {
+    padding: 30px 25px;
+    border-bottom: 1px solid #222;
+}
+
+.sidebar-logo h1 {
+    font-size: 27px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.sidebar-logo span {
+    display: block;
+    color: #ff0505;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-top: 5px;
+}
+
+.sidebar-menu {
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 14px 14px;
+    color: #aaa;
+    font-size: 13px;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.sidebar-menu a span {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.sidebar-menu a:hover {
+    background: #151515;
+    color: #fff;
+}
+
+.sidebar-menu a:first-child {
+    background: #ff0505;
+    color: #fff;
+}
+
+.sidebar-menu a:first-child:hover {
+    background: #e00000;
+}
+
+.sidebar-logout {
+    margin-top: auto;
+    padding: 20px 25px;
+    border-top: 1px solid #222;
+    color: #aaa;
+    font-size: 13px;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.sidebar-logout span {
+    margin-right: 10px;
+}
+
+.sidebar-logout:hover {
+    color: #ff0505;
+}
+
+
+/* =====================================================
+   MAIN CONTENT
+===================================================== */
+
+.main-content {
+    width: calc(100% - 245px);
+    margin-left: 245px;
+    min-height: 100vh;
+    padding: 0 35px 60px;
+}
+
+
+/* =====================================================
+   TOPBAR
+===================================================== */
+
+.topbar {
+    min-height: 90px;
+    background: #fff;
+    margin: 0 -35px 35px;
+    padding: 20px 35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.topbar h2 {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 5px;
+}
+
+.topbar p {
+    color: #888;
+    font-size: 12px;
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-user-icon {
+    width: 40px;
+    height: 40px;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.admin-user strong {
+    display: block;
+    font-size: 12px;
+}
+
+.admin-user small {
+    display: block;
+    color: #888;
+    font-size: 10px;
+    margin-top: 3px;
+}
+
+
+/* =====================================================
+   MESSAGES
+===================================================== */
+
+.admin-message {
+    padding: 14px 18px;
+    margin-bottom: 25px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.message-success {
+    background: #e8f8ed;
+    color: #19743a;
+    border-left: 4px solid #25a653;
+}
+
+.message-error {
+    background: #ffe8e8;
+    color: #c40000;
+    border-left: 4px solid #ff0505;
+}
+
+
+/* =====================================================
+   SECTION
+===================================================== */
+
+.dashboard-section,
+.admin-section {
+    margin-bottom: 55px;
+    scroll-margin-top: 30px;
+}
+
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.section-heading h1 {
+    font-size: 27px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.section-heading p {
+    color: #777;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+
+/* =====================================================
+   STATISTICS
+===================================================== */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+}
+
+.stat-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    padding: 23px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.stat-card span {
+    display: block;
+    font-size: 9px;
+    color: #888;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.stat-card strong {
+    display: block;
+    font-size: 21px;
+    font-weight: 900;
+}
+
+
+/* =====================================================
+   ADMIN CARD
+===================================================== */
+
+.admin-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    margin-bottom: 25px;
+    padding: 25px;
+}
+
+.admin-card > h2 {
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.card-header h2 {
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.card-header p {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+}
+
+
+/* =====================================================
+   PRODUCT FORM
+===================================================== */
+
+.product-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 12px 13px;
+    outline: none;
+    font-size: 13px;
+    color: #111;
+    transition: 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: #000;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.form-group small {
+    font-size: 10px;
+    color: #888;
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    padding: 12px 18px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-red {
+    background: #ff0505;
+    color: #fff;
+}
+
+.btn-red:hover {
+    background: #000;
+}
+
+.btn-dark {
+    background: #000;
+    color: #fff;
+}
+
+.btn-dark:hover {
+    background: #ff0505;
+}
+
+.btn-delete {
+    background: #fff;
+    color: #ff0505;
+    border: 1px solid #ff0505;
+}
+
+.btn-delete:hover {
+    background: #ff0505;
+    color: #fff;
+}
+
+.btn-small {
+    padding: 8px 11px;
+    font-size: 9px;
+}
+
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+.admin-table th {
+    background: #000;
+    color: #fff;
+    padding: 13px 12px;
+    text-align: left;
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    font-weight: 800;
+}
+
+.admin-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e8e8e8;
+    vertical-align: middle;
+    font-size: 12px;
+}
+
+.admin-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.empty-table {
+    text-align: center !important;
+    color: #888;
+    padding: 35px !important;
+}
+
+
+/* =====================================================
+   PRODUCT IMAGE
+===================================================== */
+
+.product-image {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+    background: #f5f5f5;
+    padding: 5px;
+}
+
+.no-image {
+    width: 65px;
+    height: 65px;
+    background: #eee;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 8px;
+    font-weight: 800;
+}
+
+.product-name {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.product-description {
+    display: block;
+    max-width: 200px;
+    color: #888;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.size-list {
+    font-size: 10px;
+    color: #555;
+}
+
+
+/* =====================================================
+   STOCK
+===================================================== */
+
+.stock-number {
+    display: inline-flex;
+    min-width: 35px;
+    padding: 6px 9px;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.stock-good {
+    background: #e9f8ee;
+    color: #1d7b3e;
+}
+
+.stock-low {
+    background: #ffe6e6;
+    color: #d00000;
+}
+
+
+/* =====================================================
+   ACTION BUTTONS
+===================================================== */
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.action-buttons form {
+    margin: 0;
+}
+
+
+/* =====================================================
+   EDIT PRODUCT
+===================================================== */
+
+.edit-row {
+    scroll-margin-top: 30px;
+}
+
+.edit-product-box {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: 25px;
+}
+
+.edit-product-box h3 {
+    font-size: 15px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+}
+
+
+/* =====================================================
+   STOCK FORM
+===================================================== */
+
+.stock-row td {
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+}
+
+.stock-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stock-form strong {
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.stock-form input {
+    width: 130px;
+    padding: 9px 10px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 11px;
+}
+
+.stock-form input:focus {
+    border-color: #000;
+}
+
+
+/* =====================================================
+   ORDERS
+===================================================== */
+
+.address-text {
+    display: block;
+    max-width: 180px;
+    line-height: 1.4;
+    color: #555;
+}
+
+.status-form {
+    margin: 0;
+}
+
+.status-select {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    background: #fff;
+}
+
+.status-select:focus {
+    border-color: #000;
+}
+
+
+/* =====================================================
+   STATUS COLORS
+===================================================== */
+
+.status-pending {
+    color: #9b6500;
+    border-color: #e4b949;
+    background: #fff8df;
+}
+
+.status-processing {
+    color: #005bb5;
+    border-color: #4c9be8;
+    background: #eaf4ff;
+}
+
+.status-shipped {
+    color: #6540a8;
+    border-color: #a98bd8;
+    background: #f2edff;
+}
+
+.status-completed {
+    color: #19743a;
+    border-color: #50b974;
+    background: #e8f8ed;
+}
+
+.status-cancelled {
+    color: #c40000;
+    border-color: #ff7777;
+    background: #ffe8e8;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1200px) {
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 900px) {
+
+    .sidebar {
+        width: 200px;
+    }
+
+    .main-content {
+        width: calc(100% - 200px);
+        margin-left: 200px;
+        padding-left: 25px;
+        padding-right: 25px;
+    }
+
+    .topbar {
+        margin-left: -25px;
+        margin-right: -25px;
+        padding-left: 25px;
+        padding-right: 25px;
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+        height: auto;
+        position: relative;
+    }
+
+    .admin-layout {
+        display: block;
+    }
+
+    .sidebar-logo {
+        padding: 20px;
+    }
+
+    .sidebar-menu {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 10px;
+    }
+
+    .sidebar-menu a {
+        white-space: nowrap;
+    }
+
+    .sidebar-menu a:first-child {
+        background: transparent;
+        color: #aaa;
+    }
+
+    .sidebar-menu a:first-child:hover {
+        background: #151515;
+        color: #fff;
+    }
+
+    .sidebar-logout {
+        margin-top: 0;
+        padding: 15px 20px;
+    }
+
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+        padding: 0 15px 40px;
+    }
+
+    .topbar {
+        margin-left: -15px;
+        margin-right: -15px;
+        padding: 18px 15px;
+    }
+
+    .topbar h2 {
+        font-size: 18px;
+    }
+
+    .admin-user {
+        display: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-form {
+        grid-template-columns: 1fr;
+    }
+
+    .form-full {
+        grid-column: auto;
+    }
+
+    .section-heading h1 {
+        font-size: 22px;
+    }
+
+    .admin-card {
+        padding: 18px;
+    }
+
+    .stock-form {
+        flex-wrap: wrap;
+    }
+
+}
+
+
+@media (max-width: 450px) {
+
+    .login-box {
+        padding: 35px 25px;
+    }
+
+    .login-logo {
+        font-size: 27px;
+    }
+
+    .stat-card {
+        padding: 18px;
+    }
+
+}
