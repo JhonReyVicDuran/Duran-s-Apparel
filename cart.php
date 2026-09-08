@@ -23,6 +23,7 @@ $sql = "
         c.cart_item_id,
         c.product_id,
         c.quantity,
+        c.size,
         p.product_name,
         p.description,
         p.price,
@@ -52,6 +53,15 @@ while ($row = $result->fetch_assoc()) {
 
     if ($row["quantity"] > $row["stock"]) {
         $row["quantity"] = intval($row["stock"]);
+    }
+
+    /*
+       If size is empty for an old cart item,
+       show M instead.
+    */
+
+    if (empty($row["size"])) {
+        $row["size"] = "M";
     }
 
     $cart_items[] = $row;
@@ -300,6 +310,9 @@ $count_stmt->close();
                     $price =
                         floatval($item["price"]);
 
+                    $size =
+                        $item["size"];
+
                     $item_total =
                         $price * $quantity;
 
@@ -343,11 +356,31 @@ $count_stmt->close();
                                 <?= htmlspecialchars($item["product_name"]); ?>
                             </h3>
 
+
                             <p class="product-price">
 
                                 ₱<?= number_format($price, 2); ?>
 
                             </p>
+
+
+                            <!-- =================================
+                                 PRODUCT SIZE
+                            ================================== -->
+
+                            <p class="product-size">
+
+                            <h3>
+                                Size:
+                            
+                                <strong>
+                                    <?= htmlspecialchars($size); ?>
+                                </strong>
+
+                            </h3>
+                            
+                            </p>
+
 
                             <p class="stock-info">
 

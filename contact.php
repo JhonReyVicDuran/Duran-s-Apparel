@@ -422,14 +422,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </a>
 
         <a href="#">
-            Shipping & Delivery
-        </a>
-
-        <a href="#">
-            Returns & Exchanges
-        </a>
-
-        <a href="#">
             FAQs
         </a>
 

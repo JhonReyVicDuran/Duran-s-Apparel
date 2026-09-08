@@ -362,14 +362,6 @@ session_start();
         </a>
 
         <a href="#">
-            Shipping & Delivery
-        </a>
-
-        <a href="#">
-            Returns & Exchanges
-        </a>
-
-        <a href="#">
             FAQs
         </a>
 

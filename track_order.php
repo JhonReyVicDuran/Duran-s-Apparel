@@ -42,7 +42,6 @@ $orders = $stmt->get_result();
     <title>My Orders - DURAN'S Apparel</title>
 
     <link rel="stylesheet" href="style.css">
-
     <link rel="stylesheet" href="logout.css">
 
     <style>
@@ -238,6 +237,19 @@ $orders = $stmt->get_result();
             margin: 3px 0;
         }
 
+        /* SIZE */
+
+        .item-size {
+            font-size: 13px;
+            color: #777;
+            margin: 5px 0;
+        }
+
+        .item-size strong {
+            color: #000;
+            font-weight: 800;
+        }
+
         .item-price {
             text-align: right;
             min-width: 130px;
@@ -387,6 +399,7 @@ $orders = $stmt->get_result();
             .item-price .subtotal {
                 font-size: 14px;
             }
+
         }
 
     </style>
@@ -401,10 +414,13 @@ $orders = $stmt->get_result();
 <header class="navbar">
 
     <div class="logo">
+
         <a href="index.php">
             <img src="images/logo.png" alt="DURAN'S Apparel">
         </a>
+
     </div>
+
 
     <nav class="menu">
 
@@ -418,15 +434,21 @@ $orders = $stmt->get_result();
 
     </nav>
 
+
     <div class="account">
 
         <span class="user-name">
-        Hello, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
+
+            Hello,
+            <?php echo htmlspecialchars($_SESSION["full_name"]); ?>
+
         </span>
+
 
         <a href="logout.php" class="login">
             Log Out
         </a>
+
 
         <a href="cart.php" class="cart">
             🛒
@@ -508,11 +530,14 @@ $orders = $stmt->get_result();
                         </h2>
 
                         <p>
+
                             Ordered on
+
                             <?= date(
                                 "F d, Y h:i A",
                                 strtotime($order["order_date"])
                             ) ?>
+
                         </p>
 
                     </div>
@@ -571,7 +596,9 @@ $orders = $stmt->get_result();
                         text-align:center;
                         font-weight:700;
                     ">
+
                         This order has been cancelled.
+
                     </div>
 
                 <?php endif; ?>
@@ -589,12 +616,18 @@ $orders = $stmt->get_result();
                     <?php
 
                     /*
-                     * Get the products belonging to this order
+                     * Get the products belonging to this order.
+                     *
+                     * IMPORTANT:
+                     * oi.size is included so the selected
+                     * size from checkout is shown here.
                      */
+
                     $item_stmt = $conn->prepare("
                         SELECT
                             oi.product_id,
                             oi.quantity,
+                            oi.size,
                             oi.price,
                             oi.subtotal,
                             p.product_name,
@@ -619,6 +652,19 @@ $orders = $stmt->get_result();
 
 
                     <?php while ($item = $items->fetch_assoc()): ?>
+
+                        <?php
+
+                        /*
+                         * Old orders may not have a saved size.
+                         * Display M as a fallback for those orders.
+                         */
+                        $size = !empty($item["size"])
+                            ? $item["size"]
+                            : "M";
+
+                        ?>
+
 
                         <div class="order-item">
 
@@ -648,16 +694,37 @@ $orders = $stmt->get_result();
                                     <?= htmlspecialchars($item["product_name"]) ?>
                                 </h3>
 
+
                                 <p>
                                     Quantity:
+
                                     <strong>
                                         <?= $item["quantity"] ?>
                                     </strong>
                                 </p>
 
+
+                                <!-- SIZE -->
+
+                                <p class="item-size">
+
+                                    Size:
+
+                                    <strong>
+                                        <?= htmlspecialchars($size) ?>
+                                    </strong>
+
+                                </p>
+
+
                                 <p>
                                     Price:
-                                    ₱<?= number_format($item["price"], 2) ?>
+
+                                    ₱<?= number_format(
+                                        $item["price"],
+                                        2
+                                    ) ?>
+
                                 </p>
 
                             </div>
@@ -705,20 +772,25 @@ $orders = $stmt->get_result();
                         <p>
 
                             <strong>Name:</strong>
+
                             <?= htmlspecialchars(
                                 $order["customer_name"]
                             ) ?>
 
                             <br>
 
+
                             <strong>Email:</strong>
+
                             <?= htmlspecialchars(
                                 $order["email"]
                             ) ?>
 
                             <br>
 
+
                             <strong>Phone:</strong>
+
                             <?= htmlspecialchars(
                                 $order["phone"] ?: "Not provided"
                             ) ?>
@@ -735,11 +807,13 @@ $orders = $stmt->get_result();
                         </h3>
 
                         <p>
+
                             <?= nl2br(
                                 htmlspecialchars(
                                     $order["address"]
                                 )
                             ) ?>
+
                         </p>
 
                     </div>
@@ -756,11 +830,14 @@ $orders = $stmt->get_result();
                         Total Amount:
                     </span>
 
+
                     <strong>
+
                         ₱<?= number_format(
                             $order["total_amount"],
                             2
                         ) ?>
+
                     </strong>
 
                 </div>

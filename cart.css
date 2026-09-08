@@ -92,6 +92,9 @@
 }
 
 .section-header h2 {
+
+    color: black;
+    
     font-size: 22px;
 
     font-weight: 900;

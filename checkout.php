@@ -61,6 +61,7 @@ $cart_sql = "
         cart_items.cart_item_id,
         cart_items.product_id,
         cart_items.quantity,
+        cart_items.size,
         products.product_name,
         products.description,
         products.price,
@@ -106,6 +107,15 @@ while ($item = $cart_result->fetch_assoc()) {
 
     $quantity = (int) $item["quantity"];
     $price = (float) $item["price"];
+
+    /*
+       If an old cart item does not have a size,
+       use M as a fallback.
+    */
+
+    if (empty($item["size"])) {
+        $item["size"] = "M";
+    }
 
     $subtotal = $price * $quantity;
 
@@ -195,6 +205,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     cart_items.cart_item_id,
                     cart_items.product_id,
                     cart_items.quantity,
+                    cart_items.size,
                     products.product_name,
                     products.price,
                     products.stock
@@ -208,12 +219,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $cart_check_stmt = $conn->prepare($cart_check_sql);
 
             if (!$cart_check_stmt) {
+
                 throw new Exception(
                     "Unable to check cart: " . $conn->error
                 );
+
             }
 
             $cart_check_stmt->bind_param("i", $user_id);
+
             $cart_check_stmt->execute();
 
             $cart_check_result = $cart_check_stmt->get_result();
@@ -228,6 +242,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 throw new Exception(
                     "Your cart is empty."
                 );
+
             }
 
 
@@ -243,9 +258,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             while ($item = $cart_check_result->fetch_assoc()) {
 
                 $product_id = (int) $item["product_id"];
+
                 $quantity = (int) $item["quantity"];
+
                 $price = (float) $item["price"];
+
                 $stock = (int) $item["stock"];
+
+                $size = trim($item["size"] ?? "");
+
+
+                // =========================================
+                // SIZE FALLBACK
+                // =========================================
+
+                if ($size === "") {
+
+                    $size = "M";
+
+                }
 
 
                 // =========================================
@@ -258,6 +289,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "Invalid quantity for " .
                         $item["product_name"] . "."
                     );
+
                 }
 
 
@@ -273,6 +305,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         ". Available stock: " .
                         $stock
                     );
+
                 }
 
 
@@ -285,13 +318,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $final_total += $subtotal;
 
 
+                // =========================================
+                // SAVE VALUES
+                // =========================================
+
                 $item["product_id"] = $product_id;
+
                 $item["quantity"] = $quantity;
+
+                $item["size"] = $size;
+
                 $item["price"] = $price;
+
                 $item["subtotal"] = $subtotal;
 
 
                 $checkout_items[] = $item;
+
             }
 
             $cart_check_stmt->close();
@@ -324,6 +367,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to prepare order: " .
                     $conn->error
                 );
+
             }
 
 
@@ -344,6 +388,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to create order: " .
                     $order_stmt->error
                 );
+
             }
 
 
@@ -366,10 +411,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     order_id,
                     product_id,
                     quantity,
+                    size,
                     price,
                     subtotal
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
             ";
 
             $order_item_stmt = $conn->prepare($order_item_sql);
@@ -380,6 +426,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to prepare order items: " .
                     $conn->error
                 );
+
             }
 
 
@@ -402,6 +449,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to prepare stock update: " .
                     $conn->error
                 );
+
             }
 
 
@@ -412,7 +460,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             foreach ($checkout_items as $item) {
 
                 $product_id = (int) $item["product_id"];
+
                 $quantity = (int) $item["quantity"];
+
+                $size = $item["size"];
+
                 $price = (float) $item["price"];
 
                 $subtotal = $price * $quantity;
@@ -423,10 +475,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 // =========================================
 
                 $order_item_stmt->bind_param(
-                    "iiidd",
+                    "iiisdd",
                     $order_id,
                     $product_id,
                     $quantity,
+                    $size,
                     $price,
                     $subtotal
                 );
@@ -438,6 +491,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "Unable to save order item: " .
                         $order_item_stmt->error
                     );
+
                 }
 
 
@@ -459,11 +513,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "Unable to update stock for " .
                         $item["product_name"] . "."
                     );
+
                 }
 
 
                 // =========================================
-                // MAKE SURE STOCK WAS ACTUALLY UPDATED
+                // MAKE SURE STOCK WAS UPDATED
                 // =========================================
 
                 if ($stock_stmt->affected_rows === 0) {
@@ -472,11 +527,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "Not enough stock for " .
                         $item["product_name"] . "."
                     );
+
                 }
+
             }
 
 
             $order_item_stmt->close();
+
             $stock_stmt->close();
 
 
@@ -497,6 +555,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to clear cart: " .
                     $conn->error
                 );
+
             }
 
 
@@ -512,6 +571,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "Unable to clear cart: " .
                     $clear_cart_stmt->error
                 );
+
             }
 
 
@@ -546,8 +606,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $error = $e->getMessage();
 
             $order_id = null;
+
         }
+
     }
+
 }
 
 ?>
@@ -559,7 +622,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Checkout - DURAN'S Apparel</title>
 
@@ -728,6 +794,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 12px;
             color: #777;
             margin-top: 5px;
+        }
+
+
+        /* =====================================================
+           SIZE
+        ===================================================== */
+
+        .summary-item-size {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+
+        .summary-item-size strong {
+            color: #000;
+            font-weight: 800;
         }
 
 
@@ -907,7 +990,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         }
 
-
     </style>
 
 </head>
@@ -917,6 +999,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
 <?php if ($success): ?>
+
 
     <!-- =====================================================
          ORDER SUCCESS
@@ -937,10 +1020,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
             <p>
+
                 Thank you for your order,
+
                 <strong>
                     <?php echo htmlspecialchars($customer_name); ?>
                 </strong>.
+
             </p>
 
 
@@ -950,20 +1036,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
             <p>
+
                 Order Number:
 
                 <span class="order-number">
+
                     #<?php echo htmlspecialchars($order_id); ?>
+
                 </span>
+
             </p>
 
 
             <p>
+
                 Total:
 
                 <strong>
+
                     ₱<?php echo number_format($total, 2); ?>
+
                 </strong>
+
             </p>
 
 
@@ -973,9 +1067,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
             <p>
+
                 <strong>
-                    <?php echo nl2br(htmlspecialchars($address)); ?>
+
+                    <?php echo nl2br(
+                        htmlspecialchars($address)
+                    ); ?>
+
                 </strong>
+
             </p>
 
 
@@ -1169,6 +1269,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                         <div>
 
+                            <!-- PRODUCT NAME -->
+
                             <div class="summary-item-name">
 
                                 <?php
@@ -1180,23 +1282,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             </div>
 
 
+                            <!-- SIZE -->
+
+                            <div class="summary-item-size">
+
+                                Size:
+
+                                <strong>
+
+                                    <?php
+                                    echo htmlspecialchars(
+                                        $item["size"]
+                                    );
+                                    ?>
+
+                                </strong>
+
+                            </div>
+
+
+                            <!-- QUANTITY -->
+
                             <div class="summary-item-qty">
 
                                 Quantity:
-                                <?php echo (int)$item["quantity"]; ?>
+
+                                <?php
+                                echo (int)$item["quantity"];
+                                ?>
 
                             </div>
 
                         </div>
 
 
+                        <!-- PRICE -->
+
                         <div class="summary-item-price">
 
                             ₱<?php
+
                             echo number_format(
                                 $item["subtotal"],
                                 2
                             );
+
                             ?>
 
                         </div>
@@ -1216,7 +1346,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     </span>
 
                     <span>
-                        ₱<?php echo number_format($total, 2); ?>
+
+                        ₱<?php
+                        echo number_format(
+                            $total,
+                            2
+                        );
+                        ?>
+
                     </span>
 
                 </div>

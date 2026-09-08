@@ -483,19 +483,11 @@ session_start();
             About Us
         </a>
 
-        <a href="#">
+        <a href="size_guide.php">
             Size Guide
         </a>
 
-        <a href="#">
-            Shipping & Delivery
-        </a>
-
-        <a href="#">
-            Returns & Exchanges
-        </a>
-
-        <a href="#">
+        <a href="faq.php">
             FAQs
         </a>
 

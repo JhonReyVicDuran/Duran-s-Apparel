@@ -16,7 +16,8 @@ $sql = "SELECT
             price,
             image,
             category,
-            stock
+            stock,
+            available_sizes
         FROM products
         ORDER BY product_id ASC";
 
@@ -54,6 +55,7 @@ $result = $conn->query($sql);
     >
 
 </head>
+
 
 <body>
 
@@ -109,10 +111,13 @@ $result = $conn->query($sql);
             <span class="user-name">
 
                 Hello,
+
                 <?php
+
                 echo htmlspecialchars(
                     $_SESSION["full_name"]
                 );
+
                 ?>
 
             </span>
@@ -125,6 +130,7 @@ $result = $conn->query($sql);
             >
                 Log Out
             </a>
+
 
         <?php else: ?>
 
@@ -150,12 +156,18 @@ $result = $conn->query($sql);
             class="cart"
         >
             🛒
-            <span id="cartCount">0</span>
+            <span
+                class="cart-count"
+                id="cartCount"
+            >
+                0
+            </span>
         </a>
 
     </div>
 
 </header>
+
 
 
 
@@ -191,6 +203,7 @@ $result = $conn->query($sql);
 
 
 
+
 <!-- =====================================================
      PRODUCTS
 ===================================================== -->
@@ -214,10 +227,43 @@ $result = $conn->query($sql);
 
             <?php while ($product = $result->fetch_assoc()): ?>
 
+
+                <?php
+
+                /*
+                -------------------------------------------------
+                GET AVAILABLE SIZES
+                -------------------------------------------------
+                */
+
+                if (!empty($product["available_sizes"])) {
+
+                    $availableSizes =
+                        explode(
+                            ",",
+                            $product["available_sizes"]
+                        );
+
+                } else {
+
+                    $availableSizes = [
+                        "XS",
+                        "S",
+                        "M",
+                        "L",
+                        "XL",
+                        "XXL"
+                    ];
+
+                }
+
+                ?>
+
+
                 <div
                     class="collection-card"
                     data-product-id="<?php
-                        echo $product["product_id"];
+                        echo (int)$product["product_id"];
                     ?>"
                 >
 
@@ -229,7 +275,11 @@ $result = $conn->query($sql);
                     <div class="collection-image">
 
                         <?php
-                        if ($product["product_id"] == 1):
+
+                        if (
+                            $product["product_id"] == 1
+                        ):
+
                         ?>
 
                             <span class="product-badge">
@@ -256,6 +306,7 @@ $result = $conn->query($sql);
 
 
 
+
                     <!-- =====================================
                          PRODUCT INFORMATION
                     ====================================== -->
@@ -266,9 +317,11 @@ $result = $conn->query($sql);
                         <h3>
 
                             <?php
+
                             echo htmlspecialchars(
                                 $product["product_name"]
                             );
+
                             ?>
 
                         </h3>
@@ -277,12 +330,15 @@ $result = $conn->query($sql);
                         <p class="product-type">
 
                             <?php
+
                             echo htmlspecialchars(
                                 $product["category"]
                             );
+
                             ?>
 
                         </p>
+
 
 
 
@@ -292,10 +348,12 @@ $result = $conn->query($sql);
                             <span class="price">
 
                                 ₱<?php
+
                                 echo number_format(
                                     $product["price"],
                                     2
                                 );
+
                                 ?>
 
                             </span>
@@ -304,13 +362,16 @@ $result = $conn->query($sql);
                             <span
                                 class="quantity"
                                 id="stock-<?php
-                                    echo $product["product_id"];
+                                    echo (int)$product["product_id"];
                                 ?>"
                             >
 
                                 Stock:
+
                                 <?php
-                                echo $product["stock"];
+
+                                echo (int)$product["stock"];
+
                                 ?>
 
                             </span>
@@ -320,19 +381,93 @@ $result = $conn->query($sql);
 
 
 
-                        <!-- =================================
-                             QUANTITY SELECTOR
-                        ================================== -->
 
                         <?php if ($product["stock"] > 0): ?>
 
+
+                            <!-- =================================
+                                 SIZE SELECTOR
+                            ================================== -->
+
+                            <div class="size-selector">
+
+                                <label
+                                    for="size-<?php
+                                        echo (int)$product["product_id"];
+                                    ?>"
+                                >
+                                    Size
+                                </label>
+
+
+                                <select
+                                    id="size-<?php
+                                        echo (int)$product["product_id"];
+                                    ?>"
+                                    class="size-select"
+                                >
+
+                                    <?php foreach (
+                                        $availableSizes
+                                        as $size
+                                    ): ?>
+
+
+                                        <?php
+
+                                        $size =
+                                            strtoupper(
+                                                trim($size)
+                                            );
+
+
+                                        if ($size === "") {
+                                            continue;
+                                        }
+
+                                        ?>
+
+
+                                        <option
+                                            value="<?php
+                                                echo htmlspecialchars(
+                                                    $size
+                                                );
+                                            ?>"
+                                        >
+
+                                            <?php
+
+                                            echo htmlspecialchars(
+                                                $size
+                                            );
+
+                                            ?>
+
+                                        </option>
+
+
+                                    <?php endforeach; ?>
+
+                                </select>
+
+                            </div>
+
+
+
+
+                            <!-- =================================
+                                 QUANTITY SELECTOR
+                            ================================== -->
+
                             <div class="quantity-selector">
+
 
                                 <button
                                     type="button"
                                     onclick="changeQuantity(
                                         <?php
-                                        echo $product["product_id"];
+                                        echo (int)$product["product_id"];
                                         ?>,
                                         -1
                                     )"
@@ -344,12 +479,12 @@ $result = $conn->query($sql);
                                 <input
                                     type="number"
                                     id="quantity-<?php
-                                        echo $product["product_id"];
+                                        echo (int)$product["product_id"];
                                     ?>"
                                     value="1"
                                     min="1"
                                     max="<?php
-                                        echo $product["stock"];
+                                        echo (int)$product["stock"];
                                     ?>"
                                     readonly
                                 >
@@ -359,7 +494,7 @@ $result = $conn->query($sql);
                                     type="button"
                                     onclick="changeQuantity(
                                         <?php
-                                        echo $product["product_id"];
+                                        echo (int)$product["product_id"];
                                         ?>,
                                         1
                                     )"
@@ -367,7 +502,9 @@ $result = $conn->query($sql);
                                     +
                                 </button>
 
+
                             </div>
+
 
 
 
@@ -380,27 +517,25 @@ $result = $conn->query($sql);
                                 class="add-cart"
                                 onclick="addToCart(
                                     <?php
-                                    echo $product["product_id"];
+                                    echo (int)$product["product_id"];
                                     ?>
                                 )"
                             >
-
                                 ADD TO CART 🛒
-
                             </button>
 
 
                         <?php else: ?>
+
 
                             <button
                                 type="button"
                                 class="add-cart"
                                 disabled
                             >
-
                                 OUT OF STOCK
-
                             </button>
+
 
                         <?php endif; ?>
 
@@ -409,14 +544,17 @@ $result = $conn->query($sql);
 
                 </div>
 
+
             <?php endwhile; ?>
 
 
         <?php else: ?>
 
+
             <p>
                 No products available.
             </p>
+
 
         <?php endif; ?>
 
@@ -424,6 +562,20 @@ $result = $conn->query($sql);
     </div>
 
 </section>
+
+
+
+
+<!-- =====================================================
+     CART NOTIFICATION
+===================================================== -->
+
+<div
+    class="cart-notification"
+    id="cartNotification"
+>
+</div>
+
 
 
 
@@ -446,7 +598,9 @@ $result = $conn->query($sql);
             Are you sure you want to log out?
         </p>
 
+
         <div class="logout-buttons">
+
 
             <button
                 type="button"
@@ -456,6 +610,7 @@ $result = $conn->query($sql);
                 LOG OUT
             </button>
 
+
             <button
                 type="button"
                 class="logout-cancel"
@@ -464,11 +619,15 @@ $result = $conn->query($sql);
                 CANCEL
             </button>
 
+
         </div>
 
     </div>
 
 </div>
+
+
+
 
 <!-- =====================================================
      LOGIN REQUIRED POPUP
@@ -481,20 +640,27 @@ $result = $conn->query($sql);
 
     <div class="login-required-popup">
 
+
         <div class="login-required-icon">
             🔒
         </div>
+
 
         <h2>
             Login Required
         </h2>
 
+
         <p>
+
             You need to log in to your DURAN'S Apparel
             account before adding products to your cart.
+
         </p>
 
+
         <div class="login-required-buttons">
+
 
             <button
                 type="button"
@@ -504,6 +670,7 @@ $result = $conn->query($sql);
                 LOG IN
             </button>
 
+
             <button
                 type="button"
                 class="login-required-cancel"
@@ -512,11 +679,15 @@ $result = $conn->query($sql);
                 CANCEL
             </button>
 
+
         </div>
 
     </div>
 
 </div>
+
+
+
 
 <!-- =====================================================
      FOOTER
@@ -524,12 +695,15 @@ $result = $conn->query($sql);
 
 <footer>
 
+
     <div class="footer-brand">
+
 
         <img
             src="images/logo.png"
             alt="DURAN'S Apparel"
         >
+
 
         <p>
 
@@ -538,6 +712,7 @@ $result = $conn->query($sql);
             quality, made just for you.
 
         </p>
+
 
         <div class="socials">
 
@@ -555,7 +730,9 @@ $result = $conn->query($sql);
 
         </div>
 
+
     </div>
+
 
 
 
@@ -597,6 +774,7 @@ $result = $conn->query($sql);
 
 
 
+
     <div class="footer-column">
 
         <h3>
@@ -607,19 +785,11 @@ $result = $conn->query($sql);
             About Us
         </a>
 
-        <a href="#">
+        <a href="size_guide.php">
             Size Guide
         </a>
 
-        <a href="#">
-            Shipping & Delivery
-        </a>
-
-        <a href="#">
-            Returns & Exchanges
-        </a>
-
-        <a href="#">
+        <a href="faq.php">
             FAQs
         </a>
 
@@ -635,22 +805,30 @@ $result = $conn->query($sql);
 
 
 
+
     <div class="copyright">
 
         <span>
+
             © 2026 DURAN'S Apparel.
             All Rights Reserved
+
         </span>
 
+
         <span>
+
             Privacy Policy |
             Terms & Conditions |
             Cookies Policy
+
         </span>
 
     </div>
 
+
 </footer>
+
 
 
 
@@ -660,11 +838,13 @@ $result = $conn->query($sql);
 
 <script>
 
+
 /* =====================================================
    CHANGE QUANTITY
 ===================================================== */
 
 function changeQuantity(productId, change) {
+
 
     const quantityInput =
         document.getElementById(
@@ -678,11 +858,15 @@ function changeQuantity(productId, change) {
 
 
     let quantity =
-        parseInt(quantityInput.value);
+        parseInt(
+            quantityInput.value
+        ) || 1;
 
 
     const max =
-        parseInt(quantityInput.max);
+        parseInt(
+            quantityInput.max
+        ) || 1;
 
 
     quantity += change;
@@ -702,9 +886,12 @@ function changeQuantity(productId, change) {
     }
 
 
-    quantityInput.value = quantity;
+    quantityInput.value =
+        quantity;
 
 }
+
+
 
 
 /* =====================================================
@@ -712,6 +899,24 @@ function changeQuantity(productId, change) {
 ===================================================== */
 
 function addToCart(productId) {
+
+
+    /* ---------------------------------------------
+       CHECK LOGIN
+    --------------------------------------------- */
+
+    <?php if (!isset($_SESSION["user_id"])): ?>
+
+        openLoginRequired();
+
+        return;
+
+    <?php endif; ?>
+
+
+    /* ---------------------------------------------
+       GET QUANTITY
+    --------------------------------------------- */
 
     const quantityInput =
         document.getElementById(
@@ -725,13 +930,25 @@ function addToCart(productId) {
 
 
     const quantity =
-        parseInt(quantityInput.value);
+        parseInt(
+            quantityInput.value
+        ) || 1;
 
 
-    if (!quantity || quantity < 1) {
+    /* ---------------------------------------------
+       GET SIZE
+    --------------------------------------------- */
 
-        alert(
-            "Please select a valid quantity."
+    const sizeInput =
+        document.getElementById(
+            "size-" + productId
+        );
+
+
+    if (!sizeInput) {
+
+        showNotification(
+            "Please select a size."
         );
 
         return;
@@ -739,23 +956,50 @@ function addToCart(productId) {
     }
 
 
-    /* =============================================
-       SEND TO PHP
-    ============================================= */
+    const size =
+        sizeInput.value;
+
+
+    if (!size) {
+
+        showNotification(
+            "Please select a size."
+        );
+
+        return;
+
+    }
+
+
+    /* ---------------------------------------------
+       FORM DATA
+    --------------------------------------------- */
 
     const formData =
         new FormData();
+
 
     formData.append(
         "product_id",
         productId
     );
 
+
     formData.append(
         "quantity",
         quantity
     );
 
+
+    formData.append(
+        "size",
+        size
+    );
+
+
+    /* ---------------------------------------------
+       SEND TO PHP
+    --------------------------------------------- */
 
     fetch(
         "add_to_cart.php",
@@ -766,69 +1010,116 @@ function addToCart(productId) {
     )
 
 
-    .then(response => response.json())
+    .then(
+        response => response.json()
+    )
 
 
-    .then(data => {
+    .then(
+        data => {
 
 
-        /* =============================================
-           LOGIN REQUIRED
-        ============================================= */
+            /* -----------------------------------------
+               LOGIN REQUIRED
+            ----------------------------------------- */
 
-        if (data.login_required) {
+            if (data.login_required) {
 
-    openLoginRequired();
+                openLoginRequired();
 
-    return;
+                return;
 
-}
+            }
 
-        /* =============================================
-           ERROR
-        ============================================= */
 
-        if (!data.success) {
+            /* -----------------------------------------
+               ERROR
+            ----------------------------------------- */
 
-            alert(data.message);
+            if (!data.success) {
 
-            return;
+                showNotification(
+                    data.message
+                );
+
+                return;
+
+            }
+
+
+            /* -----------------------------------------
+               SUCCESS
+            ----------------------------------------- */
+
+            quantityInput.value = 1;
+
+
+            updateCartCount();
+
+
+            showNotification(
+                data.message
+            );
+
 
         }
+    )
 
 
-        /* =============================================
-           SUCCESS
-        ============================================= */
+    .catch(
+        error => {
+
+            console.error(error);
 
 
-        /* =============================================
-           RESET QUANTITY
-        ============================================= */
+            showNotification(
+                "Something went wrong while adding the product."
+            );
 
-        quantityInput.value = 1;
-
-
-        /* =============================================
-           UPDATE CART COUNT
-        ============================================= */
-
-        updateCartCount();
-
-    })
-
-
-    .catch(error => {
-
-        console.error(error);
-
-        alert(
-            "Something went wrong while adding the product."
-        );
-
-    });
+        }
+    );
 
 }
+
+
+
+
+/* =====================================================
+   SHOW NOTIFICATION
+===================================================== */
+
+function showNotification(message) {
+
+
+    const notification =
+        document.getElementById(
+            "cartNotification"
+        );
+
+
+    notification.textContent =
+        message;
+
+
+    notification.classList.add(
+        "show"
+    );
+
+
+    setTimeout(
+        function() {
+
+            notification.classList.remove(
+                "show"
+            );
+
+        },
+        2500
+    );
+
+}
+
+
 
 
 /* =====================================================
@@ -837,13 +1128,20 @@ function addToCart(productId) {
 
 function updateCartCount() {
 
-    fetch("get_cart_count.php")
 
-        .then(response =>
-            response.json()
-        )
+    fetch(
+        "get_cart_count.php"
+    )
 
-        .then(data => {
+
+    .then(
+        response => response.json()
+    )
+
+
+    .then(
+        data => {
+
 
             const cartCount =
                 document.getElementById(
@@ -854,22 +1152,68 @@ function updateCartCount() {
             if (cartCount) {
 
                 cartCount.textContent =
-                    data.count;
+                    data.count || 0;
 
             }
 
-        })
+        }
+    )
 
-        .catch(error => {
+
+    .catch(
+        error => {
 
             console.error(error);
 
-        });
+        }
+    );
 
 }
 
 
-updateCartCount();
+
+
+/* =====================================================
+   LOGIN REQUIRED POPUP
+===================================================== */
+
+function openLoginRequired() {
+
+
+    document
+        .getElementById(
+            "loginRequiredOverlay"
+        )
+        .classList.add(
+            "active"
+        );
+
+}
+
+
+function closeLoginRequired() {
+
+
+    document
+        .getElementById(
+            "loginRequiredOverlay"
+        )
+        .classList.remove(
+            "active"
+        );
+
+}
+
+
+function goToLogin() {
+
+
+    window.location.href =
+        "login.php";
+
+}
+
+
 
 
 /* =====================================================
@@ -878,31 +1222,58 @@ updateCartCount();
 
 function openLogoutPopup(event) {
 
+
     event.preventDefault();
 
+
     document
-        .getElementById("logoutOverlay")
-        .classList.add("active");
+        .getElementById(
+            "logoutOverlay"
+        )
+        .classList.add(
+            "active"
+        );
 
 }
 
 
 function closeLogoutPopup() {
 
+
     document
-        .getElementById("logoutOverlay")
-        .classList.remove("active");
+        .getElementById(
+            "logoutOverlay"
+        )
+        .classList.remove(
+            "active"
+        );
 
 }
 
 
 function confirmLogout() {
 
+
     window.location.href =
         "logout.php";
 
 }
 
+
+
+
+/* =====================================================
+   LOAD CART COUNT
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        updateCartCount();
+
+    }
+);
 
 
 </script>

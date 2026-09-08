@@ -16,48 +16,65 @@ if (!isset($_SESSION["user_id"])) {
     echo json_encode([
         "success" => false,
         "login_required" => true,
-        "message" => "Please log in first before adding items to your cart."
+        "message" => "Please log in first."
     ]);
 
     exit;
 }
 
 
-/* =====================================================
-   CHECK REQUEST
-===================================================== */
-
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Invalid request."
-    ]);
-
-    exit;
-}
+$user_id = intval($_SESSION["user_id"]);
 
 
 /* =====================================================
    GET DATA
 ===================================================== */
 
-$user_id = intval($_SESSION["user_id"]);
+$product_id = isset($_POST["product_id"])
+    ? intval($_POST["product_id"])
+    : 0;
 
-$product_id = intval($_POST["product_id"] ?? 0);
+$quantity = isset($_POST["quantity"])
+    ? intval($_POST["quantity"])
+    : 1;
 
-$quantity = intval($_POST["quantity"] ?? 0);
+$size = isset($_POST["size"])
+    ? trim($_POST["size"])
+    : "";
 
 
 /* =====================================================
-   VALIDATE
+   VALIDATE DATA
 ===================================================== */
 
-if ($product_id <= 0 || $quantity <= 0) {
+if ($product_id <= 0) {
 
     echo json_encode([
         "success" => false,
-        "message" => "Invalid product or quantity."
+        "message" => "Invalid product."
+    ]);
+
+    exit;
+}
+
+
+if ($quantity < 1) {
+
+    $quantity = 1;
+}
+
+
+/*
+   IMPORTANT:
+   Do NOT automatically use M here if a size
+   was not sent. This helps us detect problems.
+*/
+
+if ($size === "") {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Please select a size."
     ]);
 
     exit;
@@ -68,23 +85,24 @@ if ($product_id <= 0 || $quantity <= 0) {
    GET PRODUCT
 ===================================================== */
 
-$stmt = $conn->prepare(
-    "SELECT product_id, product_name, price, image, stock
-     FROM products
-     WHERE product_id = ?"
-);
+$stmt = $conn->prepare("
+    SELECT
+        product_id,
+        product_name,
+        price,
+        stock,
+        available_sizes
+    FROM products
+    WHERE product_id = ?
+");
 
-$stmt->bind_param(
-    "i",
-    $product_id
-);
+$stmt->bind_param("i", $product_id);
 
 $stmt->execute();
 
 $result = $stmt->get_result();
 
-
-if ($result->num_rows !== 1) {
+if ($result->num_rows === 0) {
 
     $stmt->close();
 
@@ -96,68 +114,36 @@ if ($result->num_rows !== 1) {
     exit;
 }
 
-
 $product = $result->fetch_assoc();
 
 $stmt->close();
 
 
 /* =====================================================
-   CHECK CURRENT CART QUANTITY
+   CHECK SIZE
 ===================================================== */
 
-$stmt = $conn->prepare(
-    "SELECT quantity
-     FROM cart_items
-     WHERE user_id = ?
-     AND product_id = ?"
-);
+$available_sizes = [];
 
-$stmt->bind_param(
-    "ii",
-    $user_id,
-    $product_id
-);
+if (!empty($product["available_sizes"])) {
 
-$stmt->execute();
-
-$result = $stmt->get_result();
-
-$currentCartQuantity = 0;
-
-
-if ($result->num_rows === 1) {
-
-    $cartItem = $result->fetch_assoc();
-
-    $currentCartQuantity =
-        intval($cartItem["quantity"]);
-
+    $available_sizes = array_map(
+        "trim",
+        explode(",", $product["available_sizes"])
+    );
 }
 
-$stmt->close();
 
+/*
+   Make sure the selected size actually exists
+   for this product.
+*/
 
-/* =====================================================
-   CALCULATE NEW QUANTITY
-===================================================== */
-
-$newQuantity =
-    $currentCartQuantity + $quantity;
-
-
-/* =====================================================
-   CHECK STOCK
-===================================================== */
-
-if ($newQuantity > intval($product["stock"])) {
+if (!in_array($size, $available_sizes, true)) {
 
     echo json_encode([
         "success" => false,
-        "message" =>
-            "You can only add " .
-            $product["stock"] .
-            " item(s) of this product."
+        "message" => "Selected size is not available for this product."
     ]);
 
     exit;
@@ -165,80 +151,171 @@ if ($newQuantity > intval($product["stock"])) {
 
 
 /* =====================================================
-   ADD OR UPDATE CART
+   CHECK STOCK
 ===================================================== */
 
-if ($currentCartQuantity > 0) {
+if ($product["stock"] <= 0) {
 
-    /* =============================================
-       UPDATE EXISTING CART ITEM
-    ============================================= */
+    echo json_encode([
+        "success" => false,
+        "message" => "This product is out of stock."
+    ]);
 
-    $stmt = $conn->prepare(
-        "UPDATE cart_items
-         SET quantity = ?
-         WHERE user_id = ?
-         AND product_id = ?"
-    );
-
-    $stmt->bind_param(
-        "iii",
-        $newQuantity,
-        $user_id,
-        $product_id
-    );
-
-    $success = $stmt->execute();
-
-    $stmt->close();
-
-} else {
-
-    /* =============================================
-       ADD NEW CART ITEM
-    ============================================= */
-
-    $stmt = $conn->prepare(
-        "INSERT INTO cart_items
-        (user_id, product_id, quantity)
-        VALUES (?, ?, ?)"
-    );
-
-    $stmt->bind_param(
-        "iii",
-        $user_id,
-        $product_id,
-        $quantity
-    );
-
-    $success = $stmt->execute();
-
-    $stmt->close();
+    exit;
 }
 
 
 /* =====================================================
-   RESPONSE
+   CHECK EXISTING CART ITEM
 ===================================================== */
 
-if ($success) {
+$check_stmt = $conn->prepare("
+    SELECT
+        cart_item_id,
+        quantity
+    FROM cart_items
+    WHERE user_id = ?
+    AND product_id = ?
+    AND size = ?
+");
+
+$check_stmt->bind_param(
+    "iis",
+    $user_id,
+    $product_id,
+    $size
+);
+
+$check_stmt->execute();
+
+$check_result = $check_stmt->get_result();
+
+
+/* =====================================================
+   UPDATE EXISTING ITEM
+===================================================== */
+
+if ($check_result->num_rows > 0) {
+
+    $existing = $check_result->fetch_assoc();
+
+    $cart_item_id = intval(
+        $existing["cart_item_id"]
+    );
+
+    $existing_quantity = intval(
+        $existing["quantity"]
+    );
+
+    $new_quantity =
+        $existing_quantity + $quantity;
+
+
+    if ($new_quantity > $product["stock"]) {
+
+        $check_stmt->close();
+
+        echo json_encode([
+            "success" => false,
+            "message" =>
+                "You cannot add more than the available stock."
+        ]);
+
+        exit;
+    }
+
+
+    $update_stmt = $conn->prepare("
+        UPDATE cart_items
+        SET quantity = ?
+        WHERE cart_item_id = ?
+        AND user_id = ?
+    ");
+
+    $update_stmt->bind_param(
+        "iii",
+        $new_quantity,
+        $cart_item_id,
+        $user_id
+    );
+
+    $update_stmt->execute();
+
+    $update_stmt->close();
+
+    $check_stmt->close();
+
 
     echo json_encode([
         "success" => true,
         "message" =>
             $product["product_name"] .
-            " added to your cart.",
-        "cart_quantity" => $newQuantity
+            " (" . $size . ") updated in your cart.",
+        "size" => $size,
+        "quantity" => $new_quantity
     ]);
 
-} else {
+    exit;
+}
+
+
+/* =====================================================
+   NEW CART ITEM
+===================================================== */
+
+if ($quantity > $product["stock"]) {
+
+    $check_stmt->close();
 
     echo json_encode([
         "success" => false,
         "message" =>
-            "Unable to add product to cart."
+            "You cannot add more than the available stock."
     ]);
 
+    exit;
 }
+
+
+$insert_stmt = $conn->prepare("
+    INSERT INTO cart_items
+    (
+        user_id,
+        product_id,
+        quantity,
+        size
+    )
+    VALUES (?, ?, ?, ?)
+");
+
+$insert_stmt->bind_param(
+    "iiis",
+    $user_id,
+    $product_id,
+    $quantity,
+    $size
+);
+
+$insert_stmt->execute();
+
+$insert_stmt->close();
+
+$check_stmt->close();
+
+
+/* =====================================================
+   SUCCESS
+===================================================== */
+
+echo json_encode([
+    "success" => true,
+    "message" =>
+        $product["product_name"] .
+        " (" . $size . ") added to your cart.",
+    "size" => $size,
+    "quantity" => $quantity
+]);
+
+exit;
 
 ?>
