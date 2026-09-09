@@ -33,7 +33,7 @@ session_start();
             <a href="index.php">
 
             <img
-                src="images/logo.png"
+                src="admin/images/logo.png"
                 alt="DURAN'S Logo"
             >    
             
@@ -283,7 +283,7 @@ session_start();
     <div class="footer-brand">
 
         <img
-            src="images/logo.png"
+            src="admin/images/logo.png"
             alt="DURAN'S Apparel"
         >
 
@@ -357,11 +357,11 @@ session_start();
             About Us
         </a>
 
-        <a href="#">
+        <a href="size_guide.php">
             Size Guide
         </a>
 
-        <a href="#">
+        <a href="faq.php">
             FAQs
         </a>
 

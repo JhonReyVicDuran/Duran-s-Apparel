@@ -85,7 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <div class="logo">
         <a href="index.php">
-            <img src="images/logo.png" alt="Logo">
+            <img src="admin/images/logo.png" alt="Logo">
         </a>
     </div>
 
@@ -343,7 +343,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="footer-brand">
 
         <img
-            src="images/logo.png"
+            src="admin/images/logo.png"
             alt="DURAN'S Apparel"
         >
 
@@ -417,15 +417,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             About Us
         </a>
 
-        <a href="#">
+        <a href="size_guide.php">
             Size Guide
         </a>
 
-        <a href="#">
+        <a href="faq.php">
             FAQs
         </a>
 
-        <a href="#contact">
+        <a href="contact.php">
             Contact Us
         </a>
 

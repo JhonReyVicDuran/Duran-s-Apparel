@@ -260,7 +260,7 @@ session_start();
         <a href="index.php">
 
             <img
-                src="images/logo.png"
+                src="admin/images/logo.png"
                 alt="DURAN'S Apparel"
             >
 
@@ -295,12 +295,8 @@ session_start();
         <?php if (isset($_SESSION["user_id"])): ?>
 
             <span>
-                Hello, <?= htmlspecialchars($_SESSION["full_name"]) ?>
+                <strong> Hello, <?= htmlspecialchars($_SESSION["full_name"]) ?> </strong>
             </span>
-
-            <a href="track_order.php">
-                MY ORDERS
-            </a>
 
             <a href="cart.php" class="cart">
                 🛒

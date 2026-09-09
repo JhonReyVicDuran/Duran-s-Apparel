@@ -71,7 +71,7 @@ $result = $conn->query($sql);
         <a href="index.php">
 
             <img
-                src="images/logo.png"
+                src="admin/images/logo.png"
                 alt="DURAN'S Logo"
             >
 
@@ -290,7 +290,7 @@ $result = $conn->query($sql);
 
 
                         <img
-                            src="<?php
+                            src="admin/<?php
                                 echo htmlspecialchars(
                                     $product["image"]
                                 );
@@ -700,7 +700,7 @@ $result = $conn->query($sql);
 
 
         <img
-            src="images/logo.png"
+            src="admin/images/logo.png"
             alt="DURAN'S Apparel"
         >
 

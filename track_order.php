@@ -416,7 +416,7 @@ $orders = $stmt->get_result();
     <div class="logo">
 
         <a href="index.php">
-            <img src="images/logo.png" alt="DURAN'S Apparel">
+            <img src="admin/images/logo.png" alt="DURAN'S Apparel">
         </a>
 
     </div>
@@ -674,7 +674,7 @@ $orders = $stmt->get_result();
                             <?php if (!empty($item["image"])): ?>
 
                                 <img
-                                    src="<?= htmlspecialchars($item["image"]) ?>"
+                                    src="admin/<?= htmlspecialchars($item["image"]) ?>"
                                     alt="<?= htmlspecialchars($item["product_name"]) ?>"
                                     class="item-image"
                                 >

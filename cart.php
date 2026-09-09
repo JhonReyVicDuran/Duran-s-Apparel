@@ -156,7 +156,7 @@ $count_stmt->close();
         <a href="index.php">
 
             <img
-                src="images/logo.png"
+                src="admin/images/logo.png"
                 alt="DURAN'S Apparel Logo"
             >
 
@@ -332,7 +332,7 @@ $count_stmt->close();
                             <?php if (!empty($item["image"])): ?>
 
                                 <img
-                                    src="<?= htmlspecialchars($item["image"]); ?>"
+                                    src="admin/<?= htmlspecialchars($item["image"]); ?>"
                                     alt="<?= htmlspecialchars($item["product_name"]); ?>"
                                 >
 

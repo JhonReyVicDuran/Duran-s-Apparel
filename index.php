@@ -28,7 +28,7 @@ session_start();
 
     <div class="logo">
         <a href="index.php">
-            <img src="images/logo.png" 
+            <img src="admin/images/logo.png" 
             alt="DURAN'S Logo">
         </a>
     </div>
@@ -93,7 +93,7 @@ session_start();
 <section class="hero" id="home">
 
     <img
-        src="images/hoodies.png"
+        src="admin/images/hoodies.png"
         alt="DURAN'S Hoodies"
         class="hero-hoodies"
     >
@@ -150,7 +150,7 @@ session_start();
             </span>
 
             <img
-                src="images/hoodie.png"
+                src="admin/images/hoodie.png"
                 alt="Hoodie"
             >
 
@@ -163,7 +163,7 @@ session_start();
         <div class="product">
 
             <img
-                src="images/cap.png"
+                src="admin/images/cap.png"
                 alt="Cap"
             >
 
@@ -176,7 +176,7 @@ session_start();
         <div class="product">
 
             <img
-                src="images/tshirt.png"
+                src="admin/images/tshirt.png"
                 alt="T-Shirt"
             >
 
@@ -189,7 +189,7 @@ session_start();
         <div class="product">
 
             <img
-                src="images/shorts.png"
+                src="admin/images/shorts.png"
                 alt="Shorts"
             >
 
@@ -202,7 +202,7 @@ session_start();
         <div class="product">
 
             <img
-                src="images/long-sleeve.png"
+                src="admin/images/long-sleeve.png"
                 alt="Long Sleeve"
             >
 
@@ -215,7 +215,7 @@ session_start();
         <div class="product">
 
             <img
-                src="images/compression.png"
+                src="admin/images/compression.png"
                 alt="Compression"
             >
 
@@ -265,7 +265,7 @@ session_start();
     <div class="about-logo">
 
         <img
-            src="images/logored2.png"
+            src="admin/images/logored2.png"
             alt="DURAN'S Apparel Logo"
         >
 
@@ -348,7 +348,7 @@ session_start();
     <div class="style-logo">
 
         <img
-            src="images/logored.png"
+            src="admin/images/logored.png"
             alt="DURAN'S Logo"
         >
 
@@ -409,7 +409,7 @@ session_start();
     <div class="footer-brand">
 
         <img
-            src="images/logo.png"
+            src="admin/images/logo.png"
             alt="DURAN'S Apparel"
         >
 
