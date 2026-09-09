@@ -193,13 +193,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 
     <link
-        rel="stylesheet"
-        href="style.css"
+        rel="stylesheet" href="css/style.css"
     >
 
     <link
-        rel="stylesheet"
-        href="signup.css"
+        rel="stylesheet" href="css/signup.css"
     >
 
 </head>

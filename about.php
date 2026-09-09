@@ -11,13 +11,13 @@ session_start();
 
     <title>About Us | DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
-    <link rel="stylesheet" href="logout.css">
+    <link rel="stylesheet" href="css/logout.css">
 
-    <link rel="stylesheet" href="about.css">
+    <link rel="stylesheet" href="css/about.css">
 
-    <link rel="stylesheet" href="collection.css">
+    <link rel="stylesheet" href="css/collection.css">
 
 </head>
 

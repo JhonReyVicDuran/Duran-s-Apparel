@@ -11,9 +11,9 @@ session_start();
 
     <title>DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
-    <link rel="stylesheet" href="logout.css">
+    <link rel="stylesheet" href="css/logout.css">
 
 </head>
 

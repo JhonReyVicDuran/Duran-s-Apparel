@@ -207,13 +207,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Log In | DURAN'S Apparel</title>
 
     <link
-        rel="stylesheet"
-        href="style.css"
+        rel="stylesheet" href="css/style.css"
     >
 
     <link
-        rel="stylesheet"
-        href="login.css"
+        rel="stylesheet" href="css/login.css"
     >
 
 </head>

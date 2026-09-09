@@ -40,18 +40,15 @@ $result = $conn->query($sql);
     <title>Collections | DURAN'S Apparel</title>
 
     <link
-        rel="stylesheet"
-        href="style.css"
+        rel="stylesheet" href="css/style.css"
     >
 
     <link
-        rel="stylesheet"
-        href="logout.css"
+        rel="stylesheet" href="css/logout.css"
     >
 
     <link
-        rel="stylesheet"
-        href="collection.css"
+        rel="stylesheet" href="css/collection.css"
     >
 
 </head>

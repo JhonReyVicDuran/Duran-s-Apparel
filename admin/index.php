@@ -116,8 +116,7 @@ if (!isset($_SESSION["admin_id"])) {
     </title>
 
     <link
-        rel="stylesheet"
-        href="index.css"
+        rel="stylesheet" href="index.css"
     >
 
 </head>

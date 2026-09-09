@@ -12,7 +12,7 @@ session_start();
 
     <title>FAQs - DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
     <style>
 

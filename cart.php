@@ -134,11 +134,11 @@ $count_stmt->close();
 
     <title>Your Cart | DURAN'S Apparel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
-    <link rel="stylesheet" href="logout.css">
+    <link rel="stylesheet" href="css/logout.css">
 
-    <link rel="stylesheet" href="cart.css">
+    <link rel="stylesheet" href="css/cart.css">
 
 </head>
 
