@@ -220,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <a href="index.php">
 
                 <img
-                    src="images/logo.png"
+                    src="admin/images/logo.png"
                     alt="DURAN'S Apparel"
                 >
 

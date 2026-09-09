@@ -287,7 +287,7 @@ $result = $conn->query($sql);
 
 
                         <img
-                            src="admin/<?php
+                            src="admin/images/<?php
                                 echo htmlspecialchars(
                                     $product["image"]
                                 );

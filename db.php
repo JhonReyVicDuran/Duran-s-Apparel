@@ -2,7 +2,7 @@
 
 $host = "localhost";
 $username = "root";
-$password = "user123";
+$password = "";
 $database = "durans_apparel";
 
 $conn = new mysqli(

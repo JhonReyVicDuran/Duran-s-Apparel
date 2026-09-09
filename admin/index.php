@@ -15,7 +15,7 @@ if (isset($_GET["logout"])) {
 
     session_destroy();
 
-    header("Location: index.php");
+    header("Location: ../index.php");
 
     exit;
 }
@@ -1279,7 +1279,7 @@ if ($result) {
 
 
             <a
-                href="../index.php"
+                href="midterm/index.php"
                 target="_blank"
             >
 
@@ -1805,7 +1805,7 @@ if ($result) {
 
 
                                             <img
-                                                src="<?= htmlspecialchars(
+                                                src="images/<?= htmlspecialchars(
                                                     $product["image"]
                                                 ); ?>"
                                                 class="product-image"

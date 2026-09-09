@@ -332,7 +332,7 @@ $count_stmt->close();
                             <?php if (!empty($item["image"])): ?>
 
                                 <img
-                                    src="admin/<?= htmlspecialchars($item["image"]); ?>"
+                                    src="admin/images/<?= htmlspecialchars($item["image"]); ?>"
                                     alt="<?= htmlspecialchars($item["product_name"]); ?>"
                                 >
 

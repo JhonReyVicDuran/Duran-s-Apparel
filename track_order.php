@@ -674,7 +674,7 @@ $orders = $stmt->get_result();
                             <?php if (!empty($item["image"])): ?>
 
                                 <img
-                                    src="admin/<?= htmlspecialchars($item["image"]) ?>"
+                                    src="admin/images/<?= htmlspecialchars($item["image"]) ?>"
                                     alt="<?= htmlspecialchars($item["product_name"]) ?>"
                                     class="item-image"
                                 >

@@ -126,6 +126,7 @@
    INPUTS
 ===================================================== */
 
+.form-group input[type="text"],
 .form-group input[type="email"],
 .form-group input[type="password"] {
     width: 100%;
@@ -138,14 +139,16 @@
 
     font-size: 15px;
 
+    box-sizing: border-box;
+
     transition: 0.3s;
 }
 
+.form-group input[type="text"]:focus,
 .form-group input[type="email"]:focus,
 .form-group input[type="password"]:focus {
     border-color: #ff0505;
 }
-
 
 /* =====================================================
    REMEMBER ME
