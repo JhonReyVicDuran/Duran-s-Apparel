@@ -284,7 +284,7 @@ session_start();
     <div class="model">
 
         <img
-            src="images/model.png"
+            src="admin/images/model.png"
             alt="DURAN'S Fashion Model"
         >
 
