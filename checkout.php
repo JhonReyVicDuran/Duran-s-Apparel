@@ -1,151 +1,93 @@
 <?php
-
 session_start();
-
 require_once "db.php";
 
-
-// =====================================================
-// CHECK IF USER IS LOGGED IN
-// =====================================================
-
+// Check if user is logged in
 if (!isset($_SESSION["user_id"])) {
     header("Location: login.php");
     exit;
 }
 
-$user_id = (int) $_SESSION["user_id"];
+$user_id = $_SESSION["user_id"];
 
-
-// =====================================================
-// GET USER INFORMATION
-// =====================================================
-
-$user_sql = "
-    SELECT full_name, email
-    FROM users
-    WHERE user_id = ?
-";
-
+// Get user information
+$user_sql = "SELECT full_name, email FROM users WHERE user_id = ?";
 $user_stmt = $conn->prepare($user_sql);
-
-if (!$user_stmt) {
-    die("Database error: " . $conn->error);
-}
-
 $user_stmt->bind_param("i", $user_id);
 $user_stmt->execute();
 
 $user_result = $user_stmt->get_result();
+$user = $user_result->fetch_assoc();
 
-if ($user_result->num_rows === 0) {
+if (!$user) {
     session_destroy();
     header("Location: login.php");
     exit;
 }
 
-$user = $user_result->fetch_assoc();
-
-$default_name = $user["full_name"];
-$default_email = $user["email"];
-
-$user_stmt->close();
-
-
-// =====================================================
-// GET CART ITEMS
-// =====================================================
-
+// Get cart items
 $cart_sql = "
-    SELECT
-        cart_items.cart_item_id,
-        cart_items.product_id,
-        cart_items.quantity,
-        cart_items.size,
-        products.product_name,
-        products.description,
-        products.price,
-        products.image,
-        products.stock
-    FROM cart_items
-    INNER JOIN products
-        ON cart_items.product_id = products.product_id
-    WHERE cart_items.user_id = ?
-    ORDER BY cart_items.cart_item_id ASC
+    SELECT 
+        c.cart_item_id,
+        c.product_id,
+        c.quantity,
+        c.size,
+        p.product_name,
+        p.description,
+        p.price,
+        p.image,
+        p.stock
+    FROM cart_items c
+    INNER JOIN products p 
+        ON c.product_id = p.product_id
+    WHERE c.user_id = ?
 ";
 
 $cart_stmt = $conn->prepare($cart_sql);
-
-if (!$cart_stmt) {
-    die("Database error: " . $conn->error);
-}
-
 $cart_stmt->bind_param("i", $user_id);
 $cart_stmt->execute();
 
 $cart_result = $cart_stmt->get_result();
 
+$cart_items = [];
+$total = 0;
 
-// =====================================================
-// CHECK IF CART IS EMPTY
-// =====================================================
+while ($row = $cart_result->fetch_assoc()) {
 
-if ($cart_result->num_rows === 0) {
+    // Default size
+    if (empty($row["size"])) {
+        $row["size"] = "M";
+    }
+
+    $row["subtotal"] = $row["price"] * $row["quantity"];
+
+    $total += $row["subtotal"];
+
+    $cart_items[] = $row;
+}
+
+// Redirect if cart is empty
+if (empty($cart_items)) {
     header("Location: cart.php");
     exit;
 }
 
-
-// =====================================================
-// STORE CART ITEMS
-// =====================================================
-
-$cart_items = [];
-$total = 0;
-
-while ($item = $cart_result->fetch_assoc()) {
-
-    $quantity = (int) $item["quantity"];
-    $price = (float) $item["price"];
-
-    /*
-       If an old cart item does not have a size,
-       use M as a fallback.
-    */
-
-    if (empty($item["size"])) {
-        $item["size"] = "M";
-    }
-
-    $subtotal = $price * $quantity;
-
-    $item["subtotal"] = $subtotal;
-
-    $cart_items[] = $item;
-
-    $total += $subtotal;
-}
-
-$cart_stmt->close();
-
-
-// =====================================================
-// FORM VALUES
-// =====================================================
-
-$customer_name = $default_name;
-$email = $default_email;
+// Form values
+$customer_name = $user["full_name"];
+$email = $user["email"];
 $phone = "";
 $address = "";
 
-$error = "";
+// Payment method is always COD
+$payment_method = "Cash on Delivery";
 
-$success = false;
+$error = "";
+$success = "";
 $order_id = null;
 
 
 // =====================================================
-// PROCESS CHECKOUT
+// PLACE ORDER
 // =====================================================
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -154,6 +96,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $phone = trim($_POST["phone"] ?? "");
     $address = trim($_POST["address"] ?? "");
+
+    // Always Cash on Delivery
+    $payment_method = "Cash on Delivery";
 
 
     // =================================================
@@ -164,19 +109,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $error = "Please enter your full name.";
 
-    } elseif ($email === "") {
-
-        $error = "Please enter your email address.";
-
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
         $error = "Please enter a valid email address.";
 
-    } elseif ($phone === "") {
-
-        $error = "Please enter your mobile number.";
-
-    } elseif (!preg_match("/^[0-9+\-\s()]{10,30}$/", $phone)) {
+    } elseif (!preg_match("/^[0-9+\-\s]{7,20}$/", $phone)) {
 
         $error = "Please enter a valid mobile number.";
 
@@ -186,162 +123,82 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } else {
 
-
-        // =================================================
-        // START TRANSACTION
-        // =================================================
-
-        $conn->begin_transaction();
-
         try {
+
+            // Start database transaction
+            $conn->begin_transaction();
 
 
             // =============================================
-            // GET CART AGAIN
+            // GET CART AGAIN AND LOCK THE PRODUCTS
             // =============================================
 
             $cart_check_sql = "
-                SELECT
-                    cart_items.cart_item_id,
-                    cart_items.product_id,
-                    cart_items.quantity,
-                    cart_items.size,
-                    products.product_name,
-                    products.price,
-                    products.stock
-                FROM cart_items
-                INNER JOIN products
-                    ON cart_items.product_id = products.product_id
-                WHERE cart_items.user_id = ?
+                SELECT 
+                    c.cart_item_id,
+                    c.product_id,
+                    c.quantity,
+                    c.size,
+                    p.product_name,
+                    p.price,
+                    p.stock
+                FROM cart_items c
+                INNER JOIN products p
+                    ON c.product_id = p.product_id
+                WHERE c.user_id = ?
                 FOR UPDATE
             ";
 
             $cart_check_stmt = $conn->prepare($cart_check_sql);
-
-            if (!$cart_check_stmt) {
-
-                throw new Exception(
-                    "Unable to check cart: " . $conn->error
-                );
-
-            }
-
             $cart_check_stmt->bind_param("i", $user_id);
-
             $cart_check_stmt->execute();
 
             $cart_check_result = $cart_check_stmt->get_result();
 
-
-            // =============================================
-            // CHECK CART
-            // =============================================
-
-            if ($cart_check_result->num_rows === 0) {
-
-                throw new Exception(
-                    "Your cart is empty."
-                );
-
-            }
-
-
-            // =============================================
-            // RECALCULATE TOTAL
-            // =============================================
-
             $final_total = 0;
+            $latest_cart = [];
 
-            $checkout_items = [];
 
+            // =============================================
+            // CHECK STOCK
+            // =============================================
 
             while ($item = $cart_check_result->fetch_assoc()) {
 
-                $product_id = (int) $item["product_id"];
-
-                $quantity = (int) $item["quantity"];
-
-                $price = (float) $item["price"];
-
-                $stock = (int) $item["stock"];
-
-                $size = trim($item["size"] ?? "");
-
-
-                // =========================================
-                // SIZE FALLBACK
-                // =========================================
-
-                if ($size === "") {
-
-                    $size = "M";
-
+                if (empty($item["size"])) {
+                    $item["size"] = "M";
                 }
 
 
-                // =========================================
-                // CHECK QUANTITY
-                // =========================================
-
-                if ($quantity <= 0) {
-
-                    throw new Exception(
-                        "Invalid quantity for " .
-                        $item["product_name"] . "."
-                    );
-
-                }
-
-
-                // =========================================
-                // CHECK STOCK
-                // =========================================
-
-                if ($quantity > $stock) {
+                // Check if enough stock is available
+                if ($item["stock"] < $item["quantity"]) {
 
                     throw new Exception(
                         "Not enough stock for " .
-                        $item["product_name"] .
-                        ". Available stock: " .
-                        $stock
+                        $item["product_name"] . "."
                     );
-
                 }
 
 
-                // =========================================
-                // CALCULATE SUBTOTAL
-                // =========================================
-
-                $subtotal = $price * $quantity;
+                $subtotal = $item["price"] * $item["quantity"];
 
                 $final_total += $subtotal;
 
-
-                // =========================================
-                // SAVE VALUES
-                // =========================================
-
-                $item["product_id"] = $product_id;
-
-                $item["quantity"] = $quantity;
-
-                $item["size"] = $size;
-
-                $item["price"] = $price;
-
                 $item["subtotal"] = $subtotal;
 
-
-                $checkout_items[] = $item;
-
+                $latest_cart[] = $item;
             }
 
-            $cart_check_stmt->close();
+
+            // Make sure cart still contains products
+            if (empty($latest_cart)) {
+
+                throw new Exception("Your cart is empty.");
+            }
 
 
             // =============================================
-            // INSERT ORDER
+            // CREATE ORDER
             // =============================================
 
             $order_sql = "
@@ -352,60 +209,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     email,
                     address,
                     phone,
+                    payment_method,
                     total_amount,
                     status
                 )
                 VALUES
-                (?, ?, ?, ?, ?, ?, 'Pending')
+                (?, ?, ?, ?, ?, ?, ?, 'Pending')
             ";
 
             $order_stmt = $conn->prepare($order_sql);
 
-            if (!$order_stmt) {
-
-                throw new Exception(
-                    "Unable to prepare order: " .
-                    $conn->error
-                );
-
-            }
-
-
             $order_stmt->bind_param(
-                "issssd",
+                "isssssd",
                 $user_id,
                 $customer_name,
                 $email,
                 $address,
                 $phone,
+                $payment_method,
                 $final_total
             );
 
-
-            if (!$order_stmt->execute()) {
-
-                throw new Exception(
-                    "Unable to create order: " .
-                    $order_stmt->error
-                );
-
-            }
+            $order_stmt->execute();
 
 
-            // =============================================
-            // GET ORDER ID
-            // =============================================
-
+            // Get the newly created order ID
             $order_id = $conn->insert_id;
 
-            $order_stmt->close();
-
 
             // =============================================
-            // PREPARE ORDER ITEM INSERT
+            // INSERT ORDER ITEMS
             // =============================================
 
-            $order_item_sql = "
+            $item_sql = "
                 INSERT INTO order_items
                 (
                     order_id,
@@ -415,127 +251,67 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     price,
                     subtotal
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES
+                (?, ?, ?, ?, ?, ?)
             ";
 
-            $order_item_stmt = $conn->prepare($order_item_sql);
-
-            if (!$order_item_stmt) {
-
-                throw new Exception(
-                    "Unable to prepare order items: " .
-                    $conn->error
-                );
-
-            }
+            $item_stmt = $conn->prepare($item_sql);
 
 
-            // =============================================
-            // PREPARE STOCK UPDATE
-            // =============================================
+            foreach ($latest_cart as $item) {
 
-            $stock_sql = "
-                UPDATE products
-                SET stock = stock - ?
-                WHERE product_id = ?
-                AND stock >= ?
-            ";
-
-            $stock_stmt = $conn->prepare($stock_sql);
-
-            if (!$stock_stmt) {
-
-                throw new Exception(
-                    "Unable to prepare stock update: " .
-                    $conn->error
-                );
-
-            }
+                $subtotal =
+                    $item["price"] * $item["quantity"];
 
 
-            // =============================================
-            // INSERT ORDER ITEMS + UPDATE STOCK
-            // =============================================
-
-            foreach ($checkout_items as $item) {
-
-                $product_id = (int) $item["product_id"];
-
-                $quantity = (int) $item["quantity"];
-
-                $size = $item["size"];
-
-                $price = (float) $item["price"];
-
-                $subtotal = $price * $quantity;
-
-
-                // =========================================
-                // INSERT ORDER ITEM
-                // =========================================
-
-                $order_item_stmt->bind_param(
+                $item_stmt->bind_param(
                     "iiisdd",
                     $order_id,
-                    $product_id,
-                    $quantity,
-                    $size,
-                    $price,
+                    $item["product_id"],
+                    $item["quantity"],
+                    $item["size"],
+                    $item["price"],
                     $subtotal
                 );
 
-
-                if (!$order_item_stmt->execute()) {
-
-                    throw new Exception(
-                        "Unable to save order item: " .
-                        $order_item_stmt->error
-                    );
-
-                }
+                $item_stmt->execute();
 
 
                 // =========================================
-                // DEDUCT STOCK
+                // DEDUCT PRODUCT STOCK
                 // =========================================
+
+                $update_stock_sql = "
+                    UPDATE products
+                    SET stock = stock - ?
+                    WHERE product_id = ?
+                    AND stock >= ?
+                ";
+
+                $stock_stmt =
+                    $conn->prepare($update_stock_sql);
 
                 $stock_stmt->bind_param(
                     "iii",
-                    $quantity,
-                    $product_id,
-                    $quantity
+                    $item["quantity"],
+                    $item["product_id"],
+                    $item["quantity"]
                 );
 
+                $stock_stmt->execute();
 
-                if (!$stock_stmt->execute()) {
+
+                // Make sure stock was updated
+                if ($stock_stmt->affected_rows === 0) {
 
                     throw new Exception(
                         "Unable to update stock for " .
                         $item["product_name"] . "."
                     );
-
                 }
 
-
-                // =========================================
-                // MAKE SURE STOCK WAS UPDATED
-                // =========================================
-
-                if ($stock_stmt->affected_rows === 0) {
-
-                    throw new Exception(
-                        "Not enough stock for " .
-                        $item["product_name"] . "."
-                    );
-
-                }
-
+                $stock_stmt->close();
             }
-
-
-            $order_item_stmt->close();
-
-            $stock_stmt->close();
 
 
             // =============================================
@@ -547,70 +323,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 WHERE user_id = ?
             ";
 
-            $clear_cart_stmt = $conn->prepare($clear_cart_sql);
-
-            if (!$clear_cart_stmt) {
-
-                throw new Exception(
-                    "Unable to clear cart: " .
-                    $conn->error
-                );
-
-            }
-
+            $clear_cart_stmt =
+                $conn->prepare($clear_cart_sql);
 
             $clear_cart_stmt->bind_param(
                 "i",
                 $user_id
             );
 
-
-            if (!$clear_cart_stmt->execute()) {
-
-                throw new Exception(
-                    "Unable to clear cart: " .
-                    $clear_cart_stmt->error
-                );
-
-            }
-
-
-            $clear_cart_stmt->close();
+            $clear_cart_stmt->execute();
 
 
             // =============================================
-            // COMMIT TRANSACTION
+            // COMPLETE TRANSACTION
             // =============================================
 
             $conn->commit();
 
-
-            // =============================================
-            // SUCCESS
-            // =============================================
-
-            $success = true;
+            $success =
+                "Your order has been placed successfully!";
 
             $total = $final_total;
 
 
         } catch (Exception $e) {
 
-
-            // =============================================
-            // ROLLBACK
-            // =============================================
-
+            // Undo all database changes
             $conn->rollback();
 
             $error = $e->getMessage();
-
-            $order_id = null;
-
         }
-
     }
-
 }
 
 ?>
@@ -622,372 +365,549 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Checkout - DURAN'S Apparel</title>
-
-    <link rel="stylesheet" href="css/style.css">
 
 
     <style>
 
-        /* =====================================================
-           CHECKOUT PAGE
-        ===================================================== */
-
-        .checkout-page {
-            padding: 140px 8% 80px;
-            background: #f7f7f7;
-            min-height: 100vh;
+        * {
+            box-sizing: border-box;
         }
 
 
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #f5f5f5;
+
+            color: #111;
+        }
+
+
+        /* =========================================
+           CHECKOUT CONTAINER
+        ========================================= */
+
+        .checkout-container {
+
+            width: 90%;
+
+            max-width: 1100px;
+
+            margin: 50px auto;
+        }
+
+
+        /* =========================================
+           BACK TO CART BUTTON
+        ========================================= */
+
+        .back-cart-btn {
+
+            display: inline-block;
+
+            margin-bottom: 20px;
+
+            padding: 12px 18px;
+
+            background: #111;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 4px;
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            transition: 0.3s;
+        }
+
+
+        .back-cart-btn:hover {
+
+            background: #d00000;
+        }
+
+
+        /* =========================================
+           TITLE
+        ========================================= */
+
         .checkout-title {
+
             text-align: center;
-            margin-bottom: 45px;
+
+            margin-bottom: 35px;
         }
 
 
         .checkout-title h1 {
-            font-size: 42px;
-            font-weight: 900;
-            color: #f80404;
-            text-transform: uppercase;
-            margin-bottom: 10px;
+
+            margin: 0;
+
+            font-size: 32px;
         }
 
 
         .checkout-title p {
+
             color: #777;
-            font-size: 15px;
+
+            margin-top: 8px;
         }
 
 
-        .checkout-container {
-            max-width: 1100px;
-            margin: auto;
+        /* =========================================
+           CHECKOUT LAYOUT
+        ========================================= */
+
+        .checkout-layout {
+
             display: grid;
-            grid-template-columns: 1.5fr 1fr;
+
+            grid-template-columns:
+                1fr 380px;
+
             gap: 30px;
         }
 
 
-        /* =====================================================
-           CHECKOUT BOX
-        ===================================================== */
+        /* =========================================
+           BOX
+        ========================================= */
 
         .checkout-box {
-            background: #fff;
-            padding: 35px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 8px;
+
+            box-shadow:
+                0 3px 15px
+                rgba(0, 0, 0, 0.08);
         }
 
 
         .checkout-box h2 {
-            font-size: 22px;
-            font-weight: 900;
-            text-transform: uppercase;
+
+            margin-top: 0;
+
             margin-bottom: 25px;
-            color: #000;
+
+            font-size: 22px;
         }
 
 
-        /* =====================================================
-           FORM
-        ===================================================== */
+        /* =========================================
+           FORM FIELDS
+        ========================================= */
 
         .checkout-field {
+
             margin-bottom: 20px;
         }
 
 
         .checkout-field label {
+
             display: block;
-            font-size: 12px;
-            font-weight: 800;
+
             margin-bottom: 8px;
-            color: #000;
-            text-transform: uppercase;
+
+            font-weight: bold;
+
+            font-size: 14px;
         }
 
 
         .checkout-field input,
         .checkout-field textarea {
+
             width: 100%;
+
             padding: 14px;
+
             border: 1px solid #ddd;
+
             outline: none;
+
             font-size: 14px;
-            font-family: Arial, Helvetica, sans-serif;
-            transition: 0.3s;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #fff;
+
+            color: #000;
+
+            border-radius: 4px;
         }
 
 
         .checkout-field input:focus,
         .checkout-field textarea:focus {
+
             border-color: #000;
         }
 
 
         .checkout-field textarea {
-            height: 120px;
+
+            min-height: 110px;
+
             resize: vertical;
         }
 
 
-        /* =====================================================
-           ERROR
-        ===================================================== */
+        /* =========================================
+           PAYMENT METHOD
+        ========================================= */
 
-        .checkout-error {
-            background: #ffe5e5;
-            color: #d00000;
+        .payment-box {
+
+            border: 1px solid #ddd;
+
             padding: 15px;
-            margin-bottom: 25px;
-            font-size: 14px;
-            font-weight: 700;
-            border-left: 4px solid #ff0000;
+
+            background: #fafafa;
+
+            border-radius: 5px;
         }
 
 
-        /* =====================================================
-           ORDER SUMMARY
-        ===================================================== */
+        .payment-box strong {
 
-        .order-summary {
-            background: #fff;
-            padding: 35px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            height: fit-content;
+            display: block;
+
+            margin-bottom: 5px;
         }
 
 
-        .order-summary h2 {
-            font-size: 22px;
-            font-weight: 900;
-            color: red;
-            text-transform: uppercase;
-            margin-bottom: 25px;
+        .payment-box span {
+
+            color: #666;
+
+            font-size: 13px;
         }
 
+
+        /* =========================================
+           ERROR
+        ========================================= */
+
+        .error {
+
+            background: #ffe5e5;
+
+            color: #c00000;
+
+            padding: 14px;
+
+            margin-bottom: 20px;
+
+            border-radius: 5px;
+
+            border:
+                1px solid #ffb5b5;
+        }
+
+
+        /* =========================================
+           SUMMARY ITEM
+        ========================================= */
 
         .summary-item {
+
             display: flex;
-            justify-content: space-between;
+
+            justify-content:
+                space-between;
+
             gap: 15px;
+
             padding: 15px 0;
-            border-bottom: 1px solid #eee;
+
+            border-bottom:
+                1px solid #eee;
+        }
+
+
+        .summary-item-info {
+
+            flex: 1;
         }
 
 
         .summary-item-name {
-            font-size: 14px;
-            font-weight: 700;
-            color: #000;
+
+            font-weight: bold;
+
+            margin-bottom: 5px;
         }
 
 
-        .summary-item-qty {
-            font-size: 12px;
+        .summary-item-details {
+
             color: #777;
-            margin-top: 5px;
-        }
 
+            font-size: 13px;
 
-        /* =====================================================
-           SIZE
-        ===================================================== */
-
-        .summary-item-size {
-            font-size: 12px;
-            color: #777;
-            margin-top: 4px;
-        }
-
-
-        .summary-item-size strong {
-            color: #000;
-            font-weight: 800;
+            line-height: 1.5;
         }
 
 
         .summary-item-price {
-            font-size: 14px;
-            font-weight: 800;
-            color: black;
+
+            font-weight: bold;
+
             white-space: nowrap;
         }
 
 
+        /* =========================================
+           TOTAL
+        ========================================= */
+
         .summary-total {
+
             display: flex;
-            justify-content: space-between;
-            margin-top: 25px;
+
+            justify-content:
+                space-between;
+
+            margin-top: 20px;
+
             padding-top: 20px;
-            border-top: 2px solid #000;
+
+            border-top:
+                2px solid #111;
+
+            font-size: 20px;
+
+            font-weight: bold;
         }
 
 
-        .summary-total span:first-child {
-            font-size: 16px;
-            font-weight: 900;
-            color: red;
-            text-transform: uppercase;
-        }
-
-
-        .summary-total span:last-child {
-            font-size: 22px;
-            font-weight: 900;
-            color: #ff0505;
-        }
-
-
-        /* =====================================================
+        /* =========================================
            PLACE ORDER BUTTON
-        ===================================================== */
+        ========================================= */
 
         .place-order-btn {
+
             width: 100%;
-            margin-top: 25px;
-            padding: 16px;
-            background: #fa0505;
-            color: #fff;
+
             border: none;
-            font-size: 14px;
-            font-weight: 900;
+
+            background: #111;
+
+            color: white;
+
+            padding: 16px;
+
+            margin-top: 25px;
+
+            font-size: 15px;
+
+            font-weight: bold;
+
             cursor: pointer;
+
+            border-radius: 4px;
+
             transition: 0.3s;
-            text-transform: uppercase;
         }
 
 
         .place-order-btn:hover {
-            background: #020202;
+
+            background: #d00000;
         }
 
 
-        .back-cart {
-            display: block;
-            text-align: center;
-            margin-top: 15px;
-            color: #000;
-            font-size: 13px;
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-
-        .back-cart:hover {
-            color: #ff0505;
-        }
-
-
-        /* =====================================================
+        /* =========================================
            SUCCESS PAGE
-        ===================================================== */
+        ========================================= */
 
-        .checkout-success {
-            max-width: 600px;
+        .success-page {
+
+            width: 90%;
+
+            max-width: 650px;
+
             margin: 80px auto;
-            background: #fff;
-            padding: 50px 35px;
+
+            background: white;
+
+            padding: 45px;
+
             text-align: center;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+
+            border-radius: 8px;
+
+            box-shadow:
+                0 3px 20px
+                rgba(0, 0, 0, 0.1);
         }
 
 
         .success-icon {
+
             width: 70px;
+
             height: 70px;
-            margin: 0 auto 20px;
-            background: #2bff00;
-            color: #fff;
+
+            background: #111;
+
+            color: white;
+
+            border-radius: 50%;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
-            font-size: 35px;
-            font-weight: 900;
+
+            margin: 0 auto 20px;
+
+            font-size: 30px;
         }
 
 
-        .checkout-success h1 {
-            font-size: 30px;
-            font-weight: 900;
-            color: red;
-            text-transform: uppercase;
+        .success-page h1 {
+
             margin-bottom: 10px;
         }
 
 
-        .checkout-success p {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.7;
-            margin-bottom: 8px;
+        .success-page p {
+
+            color: #555;
+
+            line-height: 1.6;
         }
 
 
-        .order-number {
-            font-weight: 900;
-            color: #ff0505;
+        .success-details {
+
+            background: #f7f7f7;
+
+            padding: 20px;
+
+            margin-top: 25px;
+
+            text-align: left;
+
+            border-radius: 5px;
         }
 
+
+        .success-details p {
+
+            margin: 10px 0;
+        }
+
+
+        /* =========================================
+           SUCCESS BUTTONS
+        ========================================= */
 
         .success-buttons {
-            margin-top: 30px;
+
             display: flex;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
+
+            gap: 10px;
+
+            margin-top: 25px;
         }
 
 
         .success-buttons a {
-            padding: 13px 25px;
-            background: #020000;
-            color: #fff;
+
+            flex: 1;
+
+            padding: 14px;
+
             text-decoration: none;
-            font-size: 13px;
-            font-weight: 800;
-            transition: 0.3s;
+
+            text-align: center;
+
+            font-weight: bold;
+
+            border-radius: 4px;
         }
 
 
-        .success-buttons a:hover {
-            background: #ff0101;
+        .home-btn {
+
+            background: #111;
+
+            color: white;
         }
 
 
-        /* =====================================================
+        .orders-btn {
+
+            background: #eee;
+
+            color: #111;
+        }
+
+
+        /* =========================================
            MOBILE
-        ===================================================== */
+        ========================================= */
 
         @media (max-width: 800px) {
 
-            .checkout-page {
-                padding: 120px 5% 60px;
-            }
+            .checkout-layout {
 
-
-            .checkout-container {
                 grid-template-columns: 1fr;
             }
 
 
-            .checkout-title h1 {
-                font-size: 32px;
+            .checkout-container {
+
+                width: 95%;
+
+                margin: 30px auto;
             }
 
 
-            .checkout-box,
-            .order-summary {
-                padding: 25px;
+            .checkout-box {
+
+                padding: 20px;
             }
 
+
+            .success-page {
+
+                width: 95%;
+
+                padding: 30px 20px;
+            }
+
+
+            .success-buttons {
+
+                flex-direction: column;
+            }
         }
 
     </style>
@@ -998,155 +918,223 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
 
 
-<?php if ($success): ?>
+<?php if ($success && $order_id): ?>
 
 
-    <!-- =====================================================
-         ORDER SUCCESS
-    ===================================================== -->
+    <!-- =========================================
+         SUCCESS PAGE
+    ========================================== -->
 
-    <main class="checkout-page">
-
-        <div class="checkout-success">
-
-            <div class="success-icon">
-                ✓
-            </div>
+    <div class="success-page">
 
 
-            <h1>
-                Order Placed!
-            </h1>
+        <div class="success-icon">
 
-
-            <p>
-
-                Thank you for your order,
-
-                <strong>
-                    <?php echo htmlspecialchars($customer_name); ?>
-                </strong>.
-
-            </p>
-
-
-            <p>
-                Your order has been successfully placed.
-            </p>
-
-
-            <p>
-
-                Order Number:
-
-                <span class="order-number">
-
-                    #<?php echo htmlspecialchars($order_id); ?>
-
-                </span>
-
-            </p>
-
-
-            <p>
-
-                Total:
-
-                <strong>
-
-                    ₱<?php echo number_format($total, 2); ?>
-
-                </strong>
-
-            </p>
-
-
-            <p>
-                Your order will be delivered to:
-            </p>
-
-
-            <p>
-
-                <strong>
-
-                    <?php echo nl2br(
-                        htmlspecialchars($address)
-                    ); ?>
-
-                </strong>
-
-            </p>
-
-
-            <div class="success-buttons">
-
-                <a href="collection.php">
-                    CONTINUE SHOPPING
-                </a>
-
-                <a href="index.php">
-                    BACK TO HOME
-                </a>
-
-            </div>
+            ✓
 
         </div>
 
-    </main>
+
+        <h1>
+
+            Order Placed!
+
+        </h1>
+
+
+        <p>
+
+            Thank you for your order
+            from DURAN'S Apparel.
+
+        </p>
+
+
+        <div class="success-details">
+
+
+            <p>
+
+                <strong>
+                    Order Number:
+                </strong>
+
+                #<?php
+                echo htmlspecialchars($order_id);
+                ?>
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Total Amount:
+                </strong>
+
+                ₱<?php
+                echo number_format($total, 2);
+                ?>
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Payment Method:
+                </strong>
+
+                Cash on Delivery
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Delivery Address:
+                </strong>
+
+                <?php
+                echo htmlspecialchars($address);
+                ?>
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Status:
+                </strong>
+
+                Pending
+
+            </p>
+
+
+        </div>
+
+
+        <p>
+
+            Please prepare the payment
+            when your order arrives.
+
+        </p>
+
+
+        <div class="success-buttons">
+
+
+            <a
+                href="index.php"
+                class="home-btn"
+            >
+
+                Continue Shopping
+
+            </a>
+
+
+            <a
+                href="orders.php"
+                class="orders-btn"
+            >
+
+                View My Orders
+
+            </a>
+
+
+        </div>
+
+
+    </div>
 
 
 <?php else: ?>
 
 
-    <!-- =====================================================
-         CHECKOUT
-    ===================================================== -->
+    <!-- =========================================
+         CHECKOUT PAGE
+    ========================================== -->
 
-    <main class="checkout-page">
+    <div class="checkout-container">
 
+
+        <!-- BACK TO CART -->
+
+        <a
+            href="cart.php"
+            class="back-cart-btn"
+        >
+
+            ← Back to Cart
+
+        </a>
+
+
+        <!-- TITLE -->
 
         <div class="checkout-title">
 
+
             <h1>
+
                 Checkout
+
             </h1>
 
+
             <p>
-                Enter your delivery information to complete your order.
+
+                Complete your order details
+
             </p>
+
 
         </div>
 
 
-        <div class="checkout-container">
+        <!-- ERROR -->
+
+        <?php if ($error): ?>
+
+            <div class="error">
+
+                <?php
+                echo htmlspecialchars($error);
+                ?>
+
+            </div>
+
+        <?php endif; ?>
 
 
-            <!-- =================================================
+        <!-- CHECKOUT CONTENT -->
+
+        <div class="checkout-layout">
+
+
+            <!-- =====================================
                  CUSTOMER INFORMATION
-            ================================================= -->
+            ====================================== -->
 
             <div class="checkout-box">
 
+
                 <h2>
+
                     Delivery Information
+
                 </h2>
-
-
-                <?php if ($error !== ""): ?>
-
-                    <div class="checkout-error">
-
-                        <?php echo htmlspecialchars($error); ?>
-
-                    </div>
-
-                <?php endif; ?>
 
 
                 <form
                     method="POST"
-                    action="checkout.php"
+                    action=""
                 >
 
 
@@ -1154,18 +1142,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     <div class="checkout-field">
 
-                        <label for="customer_name">
+
+                        <label
+                            for="customer_name"
+                        >
+
                             Full Name
+
                         </label>
+
 
                         <input
                             type="text"
                             id="customer_name"
                             name="customer_name"
-                            value="<?php echo htmlspecialchars($customer_name); ?>"
-                            placeholder="Enter your full name"
+                            value="<?php
+                            echo htmlspecialchars(
+                                $customer_name
+                            );
+                            ?>"
                             required
                         >
+
 
                     </div>
 
@@ -1174,56 +1172,123 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     <div class="checkout-field">
 
-                        <label for="email">
-                            Email Address
+
+                        <label
+                            for="email"
+                        >
+
+                            Email
+
                         </label>
+
 
                         <input
                             type="email"
                             id="email"
                             name="email"
-                            value="<?php echo htmlspecialchars($email); ?>"
-                            placeholder="Enter your email"
+                            value="<?php
+                            echo htmlspecialchars(
+                                $email
+                            );
+                            ?>"
                             required
                         >
+
 
                     </div>
 
 
-                    <!-- PHONE -->
+                    <!-- MOBILE NUMBER -->
 
                     <div class="checkout-field">
 
-                        <label for="phone">
+
+                        <label
+                            for="phone"
+                        >
+
                             Mobile Number
+
                         </label>
+
 
                         <input
                             type="text"
                             id="phone"
                             name="phone"
-                            value="<?php echo htmlspecialchars($phone); ?>"
+                            value="<?php
+                            echo htmlspecialchars(
+                                $phone
+                            );
+                            ?>"
                             placeholder="09XXXXXXXXX"
                             required
                         >
 
+
                     </div>
 
 
-                    <!-- ADDRESS -->
+                    <!-- PAYMENT METHOD -->
 
                     <div class="checkout-field">
 
-                        <label for="address">
-                            Delivery Address
+
+                        <label>
+
+                            Payment Method
+
                         </label>
+
+
+                        <div class="payment-box">
+
+
+                            <strong>
+
+                                Cash on Delivery
+
+                            </strong>
+
+
+                            <span>
+
+                                Pay the total amount
+                                when your order
+                                is delivered.
+
+                            </span>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- DELIVERY ADDRESS -->
+
+                    <div class="checkout-field">
+
+
+                        <label
+                            for="address"
+                        >
+
+                            Delivery Address
+
+                        </label>
+
 
                         <textarea
                             id="address"
                             name="address"
                             placeholder="Enter your complete delivery address"
                             required
-                        ><?php echo htmlspecialchars($address); ?></textarea>
+                        ><?php
+                        echo htmlspecialchars($address);
+                        ?></textarea>
+
 
                     </div>
 
@@ -1234,44 +1299,46 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         type="submit"
                         class="place-order-btn"
                     >
-                        PLACE ORDER
+
+                        Place Order
+
                     </button>
 
 
                 </form>
 
 
-                <a
-                    href="cart.php"
-                    class="back-cart"
-                >
-                    ← BACK TO CART
-                </a>
-
             </div>
 
 
-            <!-- =================================================
+            <!-- =====================================
                  ORDER SUMMARY
-            ================================================= -->
+            ====================================== -->
 
-            <div class="order-summary">
+            <div class="checkout-box">
+
 
                 <h2>
-                    Your Order
+
+                    Order Summary
+
                 </h2>
 
 
                 <?php foreach ($cart_items as $item): ?>
 
+
                     <div class="summary-item">
 
 
-                        <div>
+                        <div
+                            class="summary-item-info"
+                        >
 
-                            <!-- PRODUCT NAME -->
 
-                            <div class="summary-item-name">
+                            <div
+                                class="summary-item-name"
+                            >
 
                                 <?php
                                 echo htmlspecialchars(
@@ -1282,57 +1349,46 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             </div>
 
 
-                            <!-- SIZE -->
-
-                            <div class="summary-item-size">
+                            <div
+                                class="summary-item-details"
+                            >
 
                                 Size:
+                                <?php
+                                echo htmlspecialchars(
+                                    $item["size"]
+                                );
+                                ?>
 
-                                <strong>
-
-                                    <?php
-                                    echo htmlspecialchars(
-                                        $item["size"]
-                                    );
-                                    ?>
-
-                                </strong>
-
-                            </div>
-
-
-                            <!-- QUANTITY -->
-
-                            <div class="summary-item-qty">
+                                <br>
 
                                 Quantity:
-
                                 <?php
-                                echo (int)$item["quantity"];
+                                echo $item["quantity"];
                                 ?>
 
                             </div>
 
+
                         </div>
 
 
-                        <!-- PRICE -->
-
-                        <div class="summary-item-price">
+                        <div
+                            class="summary-item-price"
+                        >
 
                             ₱<?php
-
                             echo number_format(
                                 $item["subtotal"],
                                 2
                             );
-
                             ?>
 
                         </div>
 
 
                     </div>
+
 
                 <?php endforeach; ?>
 
@@ -1341,9 +1397,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 <div class="summary-total">
 
+
                     <span>
+
                         Total
+
                     </span>
+
 
                     <span>
 
@@ -1356,14 +1416,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     </span>
 
+
                 </div>
+
 
             </div>
 
 
         </div>
 
-    </main>
+
+    </div>
 
 
 <?php endif; ?>

@@ -1279,7 +1279,7 @@ if ($result) {
 
 
             <a
-                href="midterm/index.php"
+                href="../../midterm/index.php"
                 target="_blank"
             >
 
